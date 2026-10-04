@@ -25,6 +25,7 @@ from .models import PollutionData
 
 CPCB_RSS_FEED = "https://airquality.cpcb.gov.in/caaqms/rss_feed"
 CPCB_CACHE_TTL = 5 * 60
+CPCB_MAX_STATION_DISTANCE_KM = 25
 CPCB_IST = timezone(timedelta(hours=5, minutes=30))
 _cpcb_cache = None
 
@@ -602,6 +603,9 @@ def _nearest_cpcb_station(
 
     distance, station = ranked[0]
 
+    if distance > CPCB_MAX_STATION_DISTANCE_KM:
+        return None
+
     return {
         **station,
         "distance_km": round(
@@ -661,9 +665,9 @@ def pollution(request):
             return JsonResponse(
                 {
                     "error": (
-                        "No current CPCB "
-                        "monitoring station "
-                        "data is available."
+                        "No CPCB monitoring station "
+                        "is available within 25 km "
+                        "of the selected location."
                     )
                 },
                 status=503,
