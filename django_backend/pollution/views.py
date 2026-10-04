@@ -1,5 +1,9 @@
 import json
 import os
+import math
+import time
+import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 import pandas as pd
@@ -19,7 +23,10 @@ from sklearn.linear_model import LinearRegression
 from .models import PollutionData
 
 
-OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY")
+CPCB_RSS_FEED = "https://airquality.cpcb.gov.in/caaqms/rss_feed"
+CPCB_CACHE_TTL = 5 * 60
+CPCB_IST = timezone(timedelta(hours=5, minutes=30))
+_cpcb_cache = None
 
 
 def api_login_required(view_func):
@@ -411,8 +418,198 @@ def reset_password(request):
 
 
 # ---------------------------------------------------------
-# REAL-TIME AIR QUALITY
+# OFFICIAL CPCB REAL-TIME / LATEST STATION AIR QUALITY
 # ---------------------------------------------------------
+
+def _haversine_km(lat1, lon1, lat2, lon2):
+    radius = 6371.0088
+
+    p1 = math.radians(lat1)
+    p2 = math.radians(lat2)
+    dp = math.radians(lat2 - lat1)
+    dl = math.radians(lon2 - lon1)
+
+    a = (
+        math.sin(dp / 2) ** 2
+        + math.cos(p1)
+        * math.cos(p2)
+        * math.sin(dl / 2) ** 2
+    )
+
+    return radius * 2 * math.atan2(
+        math.sqrt(a),
+        math.sqrt(1 - a),
+    )
+
+
+def _cpcb_number(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _cpcb_observed_at(value):
+    if not value:
+        return None
+
+    try:
+        return datetime.strptime(
+            value,
+            "%d-%m-%Y %H:%M:%S",
+        ).replace(
+            tzinfo=CPCB_IST
+        ).isoformat()
+
+    except ValueError:
+        return None
+
+
+def _fetch_cpcb_stations():
+    global _cpcb_cache
+
+    now = time.monotonic()
+
+    if (
+        _cpcb_cache is not None
+        and now - _cpcb_cache["fetched_at"] < CPCB_CACHE_TTL
+    ):
+        return _cpcb_cache["stations"]
+
+    response = requests.get(
+        CPCB_RSS_FEED,
+        timeout=30,
+    )
+
+    response.raise_for_status()
+
+    root = ET.fromstring(
+        response.content
+    )
+
+    stations = []
+
+    for station in root.iter("Station"):
+
+        latitude = _cpcb_number(
+            station.get("latitude")
+        )
+
+        longitude = _cpcb_number(
+            station.get("longitude")
+        )
+
+        if latitude is None or longitude is None:
+            continue
+
+        aqi_node = station.find(
+            "Air_Quality_Index"
+        )
+
+        if aqi_node is None:
+            continue
+
+        station_aqi = _cpcb_number(
+            aqi_node.get("Value")
+        )
+
+        if station_aqi is None:
+            continue
+
+        sub_indices = {}
+
+        for pollutant in station.iter(
+            "Pollutant_Index"
+        ):
+            pollutant_id = pollutant.get("id")
+            pollutant_avg = _cpcb_number(
+                pollutant.get("Avg")
+            )
+
+            if (
+                pollutant_id
+                and pollutant_avg is not None
+            ):
+                sub_indices[
+                    pollutant_id
+                ] = pollutant_avg
+
+        stations.append(
+            {
+                "name": station.get(
+                    "id"
+                )
+                or (
+                    f"{latitude:.4f},"
+                    f"{longitude:.4f}"
+                ),
+                "latitude": latitude,
+                "longitude": longitude,
+                "observed_at": _cpcb_observed_at(
+                    station.get(
+                        "lastupdate"
+                    )
+                ),
+                "aqi": round(
+                    station_aqi
+                ),
+                "predominant": (
+                    aqi_node.get(
+                        "Predominant_Parameter"
+                    )
+                ),
+                "sub_indices": sub_indices,
+            }
+        )
+
+    _cpcb_cache = {
+        "fetched_at": now,
+        "stations": stations,
+    }
+
+    return stations
+
+
+def _nearest_cpcb_station(
+    latitude,
+    longitude,
+):
+    stations = _fetch_cpcb_stations()
+
+    if not stations:
+        return None
+
+    ranked = []
+
+    for station in stations:
+        distance = _haversine_km(
+            latitude,
+            longitude,
+            station["latitude"],
+            station["longitude"],
+        )
+
+        ranked.append(
+            (
+                distance,
+                station,
+            )
+        )
+
+    ranked.sort(
+        key=lambda item: item[0]
+    )
+
+    distance, station = ranked[0]
+
+    return {
+        **station,
+        "distance_km": round(
+            distance,
+            2,
+        ),
+    }
+
 
 @api_login_required
 @require_GET
@@ -433,7 +630,11 @@ def pollution(request):
 
     except (TypeError, ValueError):
         return JsonResponse(
-            {"error": "lat/lon must be numeric"},
+            {
+                "error": (
+                    "lat/lon must be numeric"
+                )
+            },
             status=400,
         )
 
@@ -449,267 +650,95 @@ def pollution(request):
             status=400,
         )
 
-    if not OPENWEATHER_API_KEY:
-        return JsonResponse(
-            {
-                "error": (
-                    "OpenWeather API key is not configured"
-                )
-            },
-            status=503,
-        )
-
-    # -----------------------------------------------------
-    # IMPORTANT:
-    # Use the exact coordinates instead of rounding them
-    # to 2 decimal places.
-    #
-    # This prevents nearby map clicks from being treated
-    # as the same location.
-    # -----------------------------------------------------
-
-    cache_key = (
-        f"airsat_aqi_"
-        f"{lat:.5f}_"
-        f"{lon:.5f}"
-    )
-
-    cached = cache.get(cache_key)
-
-    if cached:
-        return JsonResponse(cached)
-
     try:
 
-        # -------------------------------------------------
-        # OPENWEATHER CURRENT AIR POLLUTION API
-        # -------------------------------------------------
-
-        url = (
-            "https://api.openweathermap.org/data/2.5/"
-            "air_pollution"
+        station = _nearest_cpcb_station(
+            lat,
+            lon,
         )
 
-        params = {
-            "lat": lat,
-            "lon": lon,
-            "appid": OPENWEATHER_API_KEY,
-        }
-
-        res = requests.get(
-            url,
-            params=params,
-            timeout=15,
-        )
-
-        res.raise_for_status()
-
-        payload = res.json()
-
-        if not payload.get("list"):
+        if station is None:
             return JsonResponse(
                 {
                     "error": (
-                        "No air pollution data "
-                        "available for this location"
+                        "No current CPCB "
+                        "monitoring station "
+                        "data is available."
                     )
                 },
-                status=502,
+                status=503,
             )
 
-        air_data = payload["list"][0]
-
-        # -------------------------------------------------
-        # OPENWEATHER'S OWN AQI
-        #
-        # This is ONLY 1-5.
-        # -------------------------------------------------
-
-        openweather_aqi = air_data.get(
-            "main",
-            {},
-        ).get("aqi")
-
-        # -------------------------------------------------
-        # ACTUAL POLLUTANT CONCENTRATIONS
-        # -------------------------------------------------
-
-        raw_components = air_data.get(
-            "components",
-            {},
-        )
-
-        components = {
-            "co": raw_components.get("co"),
-            "no": raw_components.get("no"),
-            "no2": raw_components.get("no2"),
-            "o3": raw_components.get("o3"),
-            "so2": raw_components.get("so2"),
-            "pm2_5": raw_components.get("pm2_5"),
-            "pm10": raw_components.get("pm10"),
-            "nh3": raw_components.get("nh3"),
-        }
-
-        # -------------------------------------------------
-        # CALCULATE NUMERIC AQI
-        # -------------------------------------------------
-
-        aqi, sub_indices = calculate_cpcb_aqi(
-            components
-        )
-
-        if aqi is None:
-            return JsonResponse(
-                {
-                    "error": (
-                        "Unable to calculate AQI "
-                        "from pollutant data"
-                    )
-                },
-                status=502,
-            )
-
-        # -------------------------------------------------
-        # REVERSE GEOCODING
-        # -------------------------------------------------
-
-        geo_url = (
-            "https://api.openweathermap.org/geo/1.0/reverse"
-        )
-
-        geo_params = {
-            "lat": lat,
-            "lon": lon,
-            "limit": 1,
-            "appid": OPENWEATHER_API_KEY,
-        }
-
-        geo_res = requests.get(
-            geo_url,
-            params=geo_params,
-            timeout=15,
-        )
-
-        geo_res.raise_for_status()
-
-        geo = geo_res.json()
-
-        if geo:
-            city = geo[0].get(
-                "name",
-                "Unknown",
-            )
-
-            state = geo[0].get(
-                "state",
-                "",
-            )
-
-            country = geo[0].get(
-                "country",
-                "",
-            )
-
-        else:
-            city = "Unknown"
-            state = ""
-            country = ""
-
-        # -------------------------------------------------
-        # DATA TIMESTAMP FROM OPENWEATHER
-        # -------------------------------------------------
-
-        data_timestamp = air_data.get("dt")
-
-        # -------------------------------------------------
-        # RESULT SENT TO FRONTEND
-        # -------------------------------------------------
+        aqi = station["aqi"]
 
         result = {
+            # THIS is the official CPCB station AQI.
             "aqi": aqi,
             "level": get_level(aqi),
 
-            # OpenWeather's original 1-5 index
-            "openweather_aqi": openweather_aqi,
-
-            # Exact coordinates requested by the user
+            # User's exact clicked location.
             "lat": lat,
             "lon": lon,
 
-            "city": city,
-            "state": state,
-            "country": country,
+            # Official monitoring station.
+            "city": station["name"],
+            "station": station["name"],
+            "station_lat": station["latitude"],
+            "station_lon": station["longitude"],
+            "station_distance_km": station[
+                "distance_km"
+            ],
 
-            # Pollutants
-            "pm25": components.get("pm2_5"),
-            "pm10": components.get("pm10"),
-            "no2": components.get("no2"),
-            "so2": components.get("so2"),
-            "o3": components.get("o3"),
-            "co": components.get("co"),
-            "nh3": components.get("nh3"),
-            "no": components.get("no"),
+            # Official CPCB observation time.
+            "observed_at": station[
+                "observed_at"
+            ],
 
-            # Individual pollutant AQI contributions
-            "sub_indices": sub_indices,
+            "predominant_pollutant": station[
+                "predominant"
+            ],
 
-            # Unix timestamp of OpenWeather's data
-            "data_timestamp": data_timestamp,
+            # CPCB station pollutant sub-indices.
+            "sub_indices": station[
+                "sub_indices"
+            ],
 
-            # Explanation for frontend/debugging
-            "source": "OpenWeather Air Pollution API",
+            # Explicit provenance.
+            "source": (
+                "Central Pollution "
+                "Control Board (CPCB) "
+                "CAAQMS live feed"
+            ),
+
             "aqi_method": (
-                "CPCB breakpoint-based calculation "
-                "from current OpenWeather pollutant "
-                "concentrations"
+                "Official CPCB National AQI "
+                "reported by the selected "
+                "CAAQMS monitoring station"
             ),
         }
 
-        # -------------------------------------------------
-        # SAVE TO DATABASE
-        # -------------------------------------------------
-
+        # Store the official station AQI, not an
+        # OpenWeather estimate.
         PollutionData.objects.create(
             lat=lat,
             lon=lon,
-            no2=components.get("no2") or 0,
-            pm25=components.get("pm2_5") or 0,
-            city=city,
+            no2=station[
+                "sub_indices"
+            ].get("NO2", 0),
+            pm25=station[
+                "sub_indices"
+            ].get("PM2.5", 0),
+            city=station["name"],
             level=get_level(aqi),
         )
 
-        # -------------------------------------------------
-        # CACHE
-        #
-        # OpenWeather recommends avoiding excessive
-        # requests for the same location.
-        # -------------------------------------------------
-
-        cache.set(
-            cache_key,
-            result,
-            timeout=120,
-        )
-
-        return JsonResponse(result)
-
-    except requests.RequestException as exc:
-        print(
-            "OpenWeather request error:",
-            exc,
-        )
-
         return JsonResponse(
-            {
-                "error": (
-                    "Unable to fetch current "
-                    "air quality data"
-                )
-            },
-            status=502,
+            result
         )
 
     except (
+        requests.RequestException,
+        ET.ParseError,
         KeyError,
         IndexError,
         TypeError,
@@ -717,14 +746,16 @@ def pollution(request):
     ) as exc:
 
         print(
-            "AQI data processing error:",
+            "CPCB AQI feed error:",
             exc,
         )
 
         return JsonResponse(
             {
                 "error": (
-                    "AQI data processing failed"
+                    "Unable to fetch the "
+                    "current official CPCB "
+                    "AQI feed."
                 )
             },
             status=502,
