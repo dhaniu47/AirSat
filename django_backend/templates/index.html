@@ -1230,10 +1230,6 @@ function getAQI(
         ? new Date(d.observed_at).toLocaleString()
         : "N/A";
 
-    const stationWarning =
-      d.station_within_25km === false
-        ? '<span style="color:#b00020;font-weight:bold;">⚠ No CPCB station within 25 km; showing nearest station.</span><br>'
-        : "";
 
     dashboardBox.innerHTML = `
 
@@ -1272,9 +1268,6 @@ function getAQI(
 
         ${level}<br>
 
-        ${d.station_within_25km === false
-          ? '<span style="color:#b00020;font-weight:bold;">⚠ No CPCB station within 25 km.</span><br>Showing nearest CPCB station.<br>'
-          : ''}
 
         📍 Nearest station distance:
         ${stationDistance}<br>
