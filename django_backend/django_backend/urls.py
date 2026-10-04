@@ -20,6 +20,7 @@ urlpatterns = [
 
     # Core
     path("pollution/", views.pollution, name="pollution"),
+    path("api/cpcb-stations/", views.cpcb_stations, name="cpcb-stations"),
 
     # ML
     path("api/predict/", views.predict_api, name="api-predict"),
