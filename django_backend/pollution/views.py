@@ -603,14 +603,14 @@ def _nearest_cpcb_station(
 
     distance, station = ranked[0]
 
-    if distance > CPCB_MAX_STATION_DISTANCE_KM:
-        return None
-
     return {
         **station,
         "distance_km": round(
             distance,
             2,
+        ),
+        "within_25km": (
+            distance <= CPCB_MAX_STATION_DISTANCE_KM
         ),
     }
 
@@ -665,9 +665,8 @@ def pollution(request):
             return JsonResponse(
                 {
                     "error": (
-                        "No CPCB monitoring station "
-                        "is available within 25 km "
-                        "of the selected location."
+                        "No current CPCB monitoring "
+                        "station data is available."
                     )
                 },
                 status=503,
@@ -691,6 +690,9 @@ def pollution(request):
             "station_lon": station["longitude"],
             "station_distance_km": station[
                 "distance_km"
+            ],
+            "station_within_25km": station[
+                "within_25km"
             ],
 
             # Official CPCB observation time.
