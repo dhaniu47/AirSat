@@ -390,15 +390,17 @@ html, body {
 
 <div class="legend">
 
-  <div>🟩 0–50</div>
+  <div>🟩 0–50 Good</div>
 
-  <div>🟨 51–100</div>
+  <div>🟨 51–100 Satisfactory</div>
 
-  <div>🟧 101–150</div>
+  <div>🟧 101–200 Moderate</div>
 
-  <div>🟥 151–200</div>
+  <div>🟥 201–300 Poor</div>
 
-  <div>🟪 200+</div>
+  <div>🟪 301–400 Very Poor</div>
+
+  <div>⬛ 401–500 Severe</div>
 
 </div>
 
@@ -926,17 +928,22 @@ function aqiColor(aqi){
     return '#f0c419';
 
 
-  if(aqi <= 150)
+  if(aqi <= 200)
 
     return '#f08a24';
 
 
-  if(aqi <= 200)
+  if(aqi <= 300)
 
     return '#d6336c';
 
 
-  return '#7c4dce';
+  if(aqi <= 400)
+
+    return '#7c4dce';
+
+
+  return '#4b1fa8';
 
 
 }
@@ -1189,7 +1196,7 @@ function getAQI(
 
       if(popup)
         popup.setContent(
-          "No current CPCB data ❌"
+          d.error || "No nearby CPCB station data ❌"
         );
 
       return;
