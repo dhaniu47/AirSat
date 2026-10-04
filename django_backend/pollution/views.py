@@ -763,6 +763,54 @@ def pollution(request):
 
 
 # ---------------------------------------------------------
+# ALL CURRENT CPCB CAAQMS STATIONS
+# ---------------------------------------------------------
+
+@api_login_required
+@require_GET
+def cpcb_stations(request):
+
+    try:
+        stations = _fetch_cpcb_stations()
+
+        return JsonResponse(
+            {
+                "source": (
+                    "Central Pollution "
+                    "Control Board (CPCB) "
+                    "CAAQMS live feed"
+                ),
+                "stations": stations,
+            }
+        )
+
+    except (
+        requests.RequestException,
+        ET.ParseError,
+        KeyError,
+        IndexError,
+        TypeError,
+        ValueError,
+    ) as exc:
+
+        print(
+            "CPCB station feed error:",
+            exc,
+        )
+
+        return JsonResponse(
+            {
+                "error": (
+                    "Unable to fetch the "
+                    "current official CPCB "
+                    "station feed."
+                )
+            },
+            status=502,
+        )
+
+
+# ---------------------------------------------------------
 # POLLUTION DATA
 # ---------------------------------------------------------
 
