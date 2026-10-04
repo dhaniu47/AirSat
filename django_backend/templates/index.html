@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html>
 
 <head>
@@ -23,156 +24,287 @@
 <style>
 
 html, body {
+
   margin:0;
+
   padding:0;
+
   height:100%;
+
   overflow:hidden;
+
   font-family:Arial;
+
 }
 
 
 #map {
+
   height:100%;
+
   width:100%;
+
 }
 
 
 #map.dark-map .leaflet-tile {
+
   filter: invert(1) hue-rotate(180deg) brightness(.78) contrast(1.08);
+
 }
 
 
 .blink {
+
   animation: blinkAnim 0.8s infinite alternate;
+
 }
 
 
 @keyframes blinkAnim {
 
   from {
+
     color: red;
+
   }
 
   to {
+
     color: black;
+
   }
 
 }
 
 
 #topBar {
+
   position:absolute;
+
   top:0;
+
   left:0;
+
   width:100%;
+
   box-sizing:border-box;
+
   background:rgba(0,0,0,0.7);
+
   color:white;
+
   padding:10px;
+
   z-index:5000;
+
   display:flex;
+
   align-items:center;
+
   gap:8px;
+
 }
 
 
 #topBar span {
+
   margin-right:auto;
+
 }
 
 
 #topBar button {
+
   cursor:pointer;
+
 }
 
 
 #searchBox {
+
   position:absolute;
+
   top:70px;
+
   left:50%;
+
   transform:translateX(-50%);
+
   padding:8px;
+
   width:260px;
+
   border-radius:20px;
+
   border:1px solid #ccc;
+
   z-index:2000;
+
 }
 
 
 #infoBox,
+
 #dashboardBox {
+
   position:absolute;
+
   top:60px;
+
   background:white;
+
   padding:10px;
+
   border-radius:8px;
+
   z-index:1000;
+
 }
 
 
 #infoBox {
+
   left:10px;
+
 }
 
 
 #dashboardBox {
+
   right:10px;
+
   width:200px;
+
 }
 
 
 .legend {
+
   position:absolute;
+
   bottom:20px;
+
   right:10px;
+
   background:white;
+
   padding:10px;
+
   border-radius:10px;
+
   z-index:1000;
+
 }
 
 
 #loginBox {
+
   position:absolute;
+
   top:50%;
+
   left:50%;
+
   transform:translate(-50%,-50%);
+
   background:white;
+
   padding:20px;
+
   border-radius:10px;
+
   z-index:3000;
+
 }
 
 
 /* ===== CURRENT LOCATION BUTTON ===== */
 
 #currentLocationBtn {
+
   position:absolute;
+
   top:110px;
+
   left:10px;
+
+  width:42px;
+
+  height:42px;
+
+  padding:0;
+
+  border-radius:50%;
+
+  border:1px solid rgba(255,255,255,0.8);
+
+  background:rgba(255,255,255,0.65);
+
+  backdrop-filter:blur(4px);
+
+  -webkit-backdrop-filter:blur(4px);
+
+  box-shadow:0 2px 8px rgba(0,0,0,0.25);
+
   z-index:2000;
-
-  padding:10px 14px;
-
-  border:none;
-  border-radius:8px;
-
-  background:white;
 
   cursor:pointer;
 
-  font-weight:bold;
+  font-size:20px;
 
-  box-shadow:0 2px 6px rgba(0,0,0,0.25);
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
 }
+
 
 #currentLocationBtn:hover {
-  background:#f2f2f2;
+
+  background:rgba(255,255,255,0.85);
+
 }
 
+
 #currentLocationBtn:disabled {
-  opacity:0.7;
+
+  opacity:0.6;
+
   cursor:wait;
+
+}
+
+
+/* Current location marker */
+
+.current-location-marker {
+
+  background:transparent;
+
+  border:none;
+
+}
+
+
+.current-location-dot {
+
+  width:16px;
+
+  height:16px;
+
+  border-radius:50%;
+
+  background:#1a73e8;
+
+  border:3px solid white;
+
+  box-shadow:0 0 0 3px rgba(26,115,232,0.25),
+
+             0 2px 8px rgba(0,0,0,0.45);
+
 }
 
 
@@ -215,7 +347,9 @@ html, body {
   <button onclick="toggleMode()">Switch</button>
 
   <button id="logoutBtn"
+
           onclick="logoutUser()"
+
           style="display:none;">
 
     Logout
@@ -226,22 +360,31 @@ html, body {
 
 
 <div id="infoBox">
+
   Click map to get AQI
+
 </div>
 
 
 <!-- CURRENT LOCATION BUTTON -->
 
 <button id="currentLocationBtn"
-        onclick="getCurrentLocation()">
 
-  📍 My Current Location
+        onclick="getCurrentLocation()"
+
+        title="Use my current location"
+
+        aria-label="Use my current location">
+
+  📍
 
 </button>
 
 
 <div id="dashboardBox">
+
   Loading...
+
 </div>
 
 
@@ -261,15 +404,25 @@ html, body {
 
 
 <canvas id="aqiChart"
+
         style="
+
         position:absolute;
+
         bottom:120px;
+
         left:10px;
+
         width:250px;
+
         height:150px;
+
         background:white;
+
         padding:10px;
+
         border-radius:10px;
+
         z-index:1000;">
 
 </canvas>
@@ -292,49 +445,69 @@ let heatLayer = null;
 
 function loadHeatmap(){
 
+
   fetch("/api/data/")
+
 
   .then(r => r.json())
 
+
   .then(res => {
+
 
     if(!res.data || res.data.length === 0){
 
+
       console.log("No heatmap data yet");
 
+
       return;
+
+
     }
 
 
     let points = res.data.map(d => [
 
+
       d.lat,
+
 
       d.lon,
 
+
       d.no2 / 300
+
 
     ]);
 
 
     if(heatLayer){
 
+
       map.removeLayer(heatLayer);
+
 
     }
 
 
     heatLayer = L.heatLayer(points, {
 
+
       radius: 25,
+
 
       blur: 20,
 
+
       maxZoom: 10
+
 
     }).addTo(map);
 
+
   });
+
 
 }
 
@@ -344,12 +517,15 @@ loadHeatmap();
 
 // ===== TOGGLE =====
 
+
 let useBackend = false;
 
 
 function toggleMode(){
 
+
   useBackend = !useBackend;
+
 
   alert(
 
@@ -361,50 +537,65 @@ function toggleMode(){
 
   );
 
+
 }
 
 
 // ===== ELEMENTS =====
 
+
 const user = document.getElementById("user");
+
 
 const pass = document.getElementById("pass");
 
+
 const loginBox = document.getElementById("loginBox");
+
 
 const dashboardBox = document.getElementById("dashboardBox");
 
 
 // ===== AQI COLOR =====
 
+
 function getAQIColor(aqi){
 
+
   aqi = Number(aqi);
+
 
   if(aqi <= 50)
 
     return "🟩 Good";
 
+
   if(aqi <= 100)
 
     return "🟨 Moderate";
+
 
   if(aqi <= 150)
 
     return "🟧 Unhealthy (Sensitive)";
 
+
   if(aqi <= 200)
 
     return "🟥 Unhealthy";
 
+
   return "🟪 Hazardous";
+
 
 }
 
 
 // ===== CSRF =====
 
+
 function getCookie(name){
+
 
   const cookies = document.cookie
 
@@ -415,97 +606,135 @@ function getCookie(name){
 
   for (const cookie of cookies){
 
+
     const [key, ...rest] =
 
       cookie.trim().split("=");
 
+
     if (key === name)
 
       return decodeURIComponent(rest.join("="));
+
 
   }
 
 
   return null;
 
+
 }
 
 
 function csrfHeaders(){
 
+
   return {
 
+
     "Content-Type":"application/json",
+
 
     "X-CSRFToken":
 
       getCookie("csrftoken") || ""
 
+
   };
+
 
 }
 
 
 // ===== LOGIN =====
 
+
 function login(){
+
 
   fetch("/api/login/", {
 
+
     method:"POST",
+
 
     credentials:"same-origin",
 
+
     headers:csrfHeaders(),
+
 
     body:JSON.stringify({
 
+
       username:user.value,
+
 
       password:pass.value
 
+
     })
 
+
   })
+
 
   .then(async r => ({
 
+
     ok:r.ok,
+
 
     data:await r.json()
 
+
   }))
+
 
   .then(({ok, data})=>{
 
+
     if(ok && data.status==="success"){
+
 
       loginBox.style.display="none";
 
+
       logoutBtn.style.display="inline-block";
+
 
       loadHeatmap();
 
+
       loadAQIMarkers();
 
+
     }
+
 
     else {
 
+
       alert(data.error || "Invalid login");
+
 
     }
 
+
   })
 
+
   .catch(()=>alert("Login request failed"));
+
 
 }
 
 
 // ===== LOGOUT =====
 
+
 function syncAuthState(){
+
 
   fetch("/api/data/", {
 
@@ -513,89 +742,127 @@ function syncAuthState(){
 
   })
 
+
   .then(r=>{
+
 
     if(r.ok){
 
+
       loginBox.style.display="none";
+
 
       logoutBtn.style.display="inline-block";
 
+
     }
+
 
     else {
 
+
       loginBox.style.display="block";
+
 
       logoutBtn.style.display="none";
 
+
     }
+
 
   })
 
+
   .catch(()=>{
+
 
     loginBox.style.display="block";
 
+
     logoutBtn.style.display="none";
 
+
   });
+
 
 }
 
 
 function logoutUser(){
 
+
   fetch("/api/logout/", {
+
 
     method:"POST",
 
+
     credentials:"same-origin",
+
 
     headers:csrfHeaders()
 
+
   })
+
 
   .then(async r => ({
 
+
     ok:r.ok,
+
 
     data:await r.json()
 
+
   }))
+
 
   .then(({ok, data})=>{
 
+
     if(ok){
+
 
       loginBox.style.display="block";
 
+
       logoutBtn.style.display="none";
+
 
       if(aqiMarkerLayer)
 
         aqiMarkerLayer.clearLayers();
 
+
       if(heatLayer)
 
         map.removeLayer(heatLayer);
 
+
     }
+
 
     else {
 
+
       alert(data.error || "Logout failed");
+
 
     }
 
+
   })
 
+
   .catch(()=>alert("Logout request failed"));
+
 
 }
 
 
 // ===== MAP =====
+
 
 var map =
 
@@ -604,51 +871,72 @@ var map =
 
 // 🌍 Light
 
+
 const lightMap = L.tileLayer(
 
-  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+
 
   {
 
+
     attribution:'&copy; OpenStreetMap contributors',
+
 
     maxZoom:19
 
+
   }
+
 
 );
 
 
 // 🌙 Dark
 
+
 const darkMap = L.tileLayer(
 
-  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+
 
   {
 
+
     attribution:'&copy; OpenStreetMap contributors',
+
 
     maxZoom:19
 
+
   }
+
 
 );
 
 
 // 🛰️ Satellite
 
+
 const satelliteMap = L.tileLayer(
+
 
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
 
+
   {
+
 
     attribution:'&copy; Esri',
 
+
     maxZoom:19
 
+
   }
+
 
 );
 
@@ -663,30 +951,38 @@ const aqiMarkerLayer =
 
 function aqiColor(aqi){
 
+
   aqi = Number(aqi);
+
 
   if(aqi <= 50)
 
     return '#22a06b';
 
+
   if(aqi <= 100)
 
     return '#f0c419';
+
 
   if(aqi <= 150)
 
     return '#f08a24';
 
+
   if(aqi <= 200)
 
     return '#d6336c';
 
+
   return '#7c4dce';
+
 
 }
 
 
 function loadAQIMarkers(){
+
 
   fetch("/api/data/", {
 
@@ -694,31 +990,39 @@ function loadAQIMarkers(){
 
   })
 
+
   .then(r =>
 
     r.ok ? r.json() : null
 
   )
 
+
   .then(res => {
+
 
     if(!res || !res.data)
 
       return;
+
 
     aqiMarkerLayer.clearLayers();
 
 
     res.data.forEach(d => {
 
+
       const aqi = Number(d.no2);
+
 
       const color = aqiColor(aqi);
 
 
       const icon = L.divIcon({
 
+
         className:"aqi-marker",
+
 
         html:
 
@@ -754,9 +1058,12 @@ function loadAQIMarkers(){
 
           '</div>',
 
+
         iconSize:[34,20],
 
+
         iconAnchor:[17,10]
+
 
       });
 
@@ -769,38 +1076,52 @@ function loadAQIMarkers(){
 
       )
 
+
       .bindTooltip(
 
         'AQI: ' + Math.round(aqi)
 
       )
 
+
       .addTo(aqiMarkerLayer);
+
 
     });
 
+
   });
+
 
 }
 
 
 L.control.layers(
 
+
   {
+
 
     "☀ Light":lightMap,
 
+
     "🌙 Dark":darkMap,
+
 
     "🛰 Satellite":satelliteMap
 
+
   },
+
 
   {
 
+
     "🌫 AQI":aqiMarkerLayer
 
+
   }
+
 
 ).addTo(map);
 
@@ -810,6 +1131,7 @@ map.on(
   'baselayerchange',
 
   function(e){
+
 
     document
 
@@ -825,12 +1147,14 @@ map.on(
 
       );
 
+
   }
 
 );
 
 
 // ===== GRAPH =====
+
 
 let chartData = [];
 
@@ -841,11 +1165,15 @@ const chart = new Chart(
 
   {
 
+
     type:'line',
+
 
     data:{
 
+
       labels:[],
+
 
       datasets:[
 
@@ -859,13 +1187,16 @@ const chart = new Chart(
 
       ]
 
+
     },
+
 
     options:{
 
       responsive:false
 
     }
+
 
   }
 
@@ -874,34 +1205,43 @@ const chart = new Chart(
 
 function updateGraph(aqi){
 
+
   let t =
 
     new Date().toLocaleTimeString();
+
 
   chartData.push(aqi);
 
 
   if(chartData.length > 10){
 
+
     chartData.shift();
 
+
     chart.data.labels.shift();
+
 
   }
 
 
   chart.data.labels.push(t);
 
+
   chart.data.datasets[0].data =
 
     chartData;
 
+
   chart.update();
+
 
 }
 
 
 // ===== CORRECT AQI FETCH =====
+
 
 function getAQI(
 
@@ -909,11 +1249,10 @@ function getAQI(
 
   lon,
 
-  popup = null,
-
-  popupTitle = null
+  popup = null
 
 ){
+
 
   fetch(
 
@@ -927,7 +1266,9 @@ function getAQI(
 
   )
 
+
   .then(r => r.json())
+
 
   .then(d => {
 
@@ -943,6 +1284,7 @@ function getAQI(
 
     if(!d || d.error){
 
+
       if(popup)
 
         popup.setContent(
@@ -951,12 +1293,15 @@ function getAQI(
 
         );
 
+
       return;
+
 
     }
 
 
     let aqi = d.aqi;
+
 
     let level =
 
@@ -967,6 +1312,7 @@ function getAQI(
 
 
     // DASHBOARD
+
 
     let oldAQI =
 
@@ -987,9 +1333,12 @@ function getAQI(
 
     dashboardBox.innerHTML = `
 
+
       <b>Dashboard</b><br>
 
+
       ${d.city}<br>
+
 
       AQI:
 
@@ -999,7 +1348,9 @@ function getAQI(
 
       </span><br>
 
+
       ${level}<br>
+
 
       🔮 Future AQI:
 
@@ -1009,42 +1360,30 @@ function getAQI(
 
       </span>
 
+
     `;
 
 
     // POPUP FIX
 
+
     if(popup){
 
-      if(popupTitle){
 
-        popup.setContent(`
+      popup.setContent(`
 
-          <b>📍 ${popupTitle}</b><br>
 
-          ${d.city}<br>
+        <b>${d.city}</b><br>
 
-          AQI: ${aqi}<br>
 
-          ${level}
+        AQI: ${aqi}<br>
 
-        `);
 
-      }
+        ${level}
 
-      else {
 
-        popup.setContent(`
+      `);
 
-          <b>${d.city}</b><br>
-
-          AQI: ${aqi}<br>
-
-          ${level}
-
-        `);
-
-      }
 
     }
 
@@ -1061,9 +1400,12 @@ function getAQI(
 
     )
 
+
     .then(r => r.json())
 
+
     .then(p => {
+
 
       document
 
@@ -1073,12 +1415,15 @@ function getAQI(
 
         p.prediction;
 
+
     });
 
 
   })
 
+
   .catch(()=>{
+
 
     if(popup)
 
@@ -1088,21 +1433,24 @@ function getAQI(
 
       );
 
+
   });
+
 
 }
 
 
-// =====================================================
-// ===== CURRENT LOCATION ==============================
-// =====================================================
+// ===== CURRENT LOCATION =====
+
 
 let currentLocationMarker = null;
+
 
 let currentLocationPopup = null;
 
 
 function getCurrentLocation(){
+
 
   const button =
 
@@ -1115,47 +1463,46 @@ function getCurrentLocation(){
 
   if(!navigator.geolocation){
 
+
     alert(
 
       "Geolocation is not supported by this browser."
 
     );
 
+
     return;
+
 
   }
 
 
   button.disabled = true;
 
-  button.innerText =
-
-    "📍 Getting location...";
+  button.innerText = "⏳";
 
 
   navigator.geolocation.getCurrentPosition(
 
+
     function(position){
+
 
       const lat =
 
         position.coords.latitude;
+
 
       const lon =
 
         position.coords.longitude;
 
 
-      // Store location so the existing
-
-      // 5-second refresh continues
-
       window.lastLat = lat;
+
 
       window.lastLon = lon;
 
-
-      // Move map to current location
 
       map.flyTo(
 
@@ -1166,9 +1513,11 @@ function getCurrentLocation(){
       );
 
 
-      // Remove previous current-location marker
+      // Remove previous current location marker
+
 
       if(currentLocationMarker){
+
 
         map.removeLayer(
 
@@ -1176,10 +1525,37 @@ function getCurrentLocation(){
 
         );
 
+
       }
 
 
-      // Create popup
+      // Create current location marker
+
+
+      currentLocationMarker =
+
+        L.marker(
+
+          [lat, lon],
+
+          {
+
+            icon:L.divIcon({
+
+              className:"current-location-marker",
+
+              html:'<div class="current-location-dot"></div>',
+
+              iconSize:[22,22],
+
+              iconAnchor:[11,11]
+
+            })
+
+          }
+
+        ).addTo(map);
+
 
       currentLocationPopup =
 
@@ -1189,35 +1565,22 @@ function getCurrentLocation(){
 
         })
 
+
         .setLatLng(
 
           [lat, lon]
 
         )
 
+
         .setContent(`
 
-          <b>📍 Current Location AQI</b><br>
+          <b>📍 Current Location</b><br>
 
           Loading AQI...
 
         `);
 
-
-      // Create current-location marker
-
-      currentLocationMarker =
-
-        L.marker(
-
-          [lat, lon]
-
-        )
-
-        .addTo(map);
-
-
-      // Open popup
 
       currentLocationMarker
 
@@ -1230,42 +1593,35 @@ function getCurrentLocation(){
         .openPopup();
 
 
-      // Get real AQI using
-
-      // the existing API
-
       getAQI(
 
         lat,
 
         lon,
 
-        currentLocationPopup,
-
-        "Current Location AQI"
+        currentLocationPopup
 
       );
 
 
       button.disabled = false;
 
-      button.innerText =
+      button.innerText = "📍";
 
-        "📍 My Current Location";
 
     },
 
 
     function(error){
 
+
       button.disabled = false;
 
-      button.innerText =
-
-        "📍 My Current Location";
+      button.innerText = "📍";
 
 
       if(error.code === 1){
+
 
         alert(
 
@@ -1273,9 +1629,12 @@ function getCurrentLocation(){
 
         );
 
+
       }
 
+
       else if(error.code === 2){
+
 
         alert(
 
@@ -1283,9 +1642,12 @@ function getCurrentLocation(){
 
         );
 
+
       }
 
+
       else if(error.code === 3){
+
 
         alert(
 
@@ -1293,9 +1655,12 @@ function getCurrentLocation(){
 
         );
 
+
       }
 
+
       else{
+
 
         alert(
 
@@ -1303,12 +1668,15 @@ function getCurrentLocation(){
 
         );
 
+
       }
+
 
     },
 
 
     {
+
 
       enableHighAccuracy:true,
 
@@ -1316,20 +1684,26 @@ function getCurrentLocation(){
 
       maximumAge:0
 
+
     }
 
+
   );
+
 
 }
 
 
 // ===== FIXED MAP CLICK =====
 
+
 map.on('click', function(e){
+
 
   let lat =
 
     e.latlng.lat;
+
 
   let lon =
 
@@ -1338,10 +1712,12 @@ map.on('click', function(e){
 
   window.lastLat = lat;
 
+
   window.lastLon = lon;
 
 
   let popup = L.popup()
+
 
     .setLatLng(
 
@@ -1349,16 +1725,19 @@ map.on('click', function(e){
 
     )
 
+
     .setContent(
 
       "Loading AQI..."
 
     )
 
+
     .openOn(map);
 
 
   // PASS popup here
+
 
   getAQI(
 
@@ -1370,14 +1749,19 @@ map.on('click', function(e){
 
   );
 
+
 });
 
 
 // =====================================================
+
 // ===== SEARCH WITH REAL GEOGRAPHICAL BOUNDARY =====
+
 // =====================================================
 
+
 let searchMarker = null;
+
 
 let boundaryLayer = null;
 
@@ -1391,6 +1775,7 @@ document
     "keydown",
 
     function(e){
+
 
       if(e.key !== "Enter"){
 
@@ -1433,12 +1818,15 @@ document
 
       )
 
+
       .then(r => r.json())
+
 
       .then(data => {
 
 
         if(data.length === 0){
+
 
           alert(
 
@@ -1446,7 +1834,9 @@ document
 
           );
 
+
           return;
+
 
         }
 
@@ -1460,6 +1850,7 @@ document
 
           parseFloat(result.lat);
 
+
         const lon =
 
           parseFloat(result.lon);
@@ -1469,6 +1860,7 @@ document
 
           lat;
 
+
         window.lastLon =
 
           lon;
@@ -1476,13 +1868,16 @@ document
 
         // Remove previous marker
 
+
         if(searchMarker){
+
 
           map.removeLayer(
 
             searchMarker
 
           );
+
 
         }
 
@@ -1495,20 +1890,25 @@ document
 
           )
 
+
           .bindPopup(
 
             `<b>${result.display_name}</b>`
 
           )
 
+
           .addTo(map)
+
 
           .openPopup();
 
 
         // Remove previous boundary
 
+
         if(boundaryLayer){
+
 
           map.removeLayer(
 
@@ -1516,7 +1916,9 @@ document
 
           );
 
+
           boundaryLayer = null;
+
 
         }
 
@@ -1534,6 +1936,7 @@ document
 
         if(result.geojson){
 
+
           boundaryLayer =
 
             L.geoJSON(
@@ -1542,23 +1945,32 @@ document
 
               {
 
+
                 style:{
+
 
                   color:"#0066ff",
 
+
                   weight:3,
+
 
                   opacity:0.9,
 
+
                   fillColor:"#3388ff",
+
 
                   fillOpacity:0.12
 
+
                 }
+
 
               }
 
             )
+
 
             .addTo(map);
 
@@ -1574,6 +1986,7 @@ document
 
           try{
 
+
             const bounds =
 
               boundaryLayer.getBounds();
@@ -1581,11 +1994,13 @@ document
 
             if(bounds.isValid()){
 
+
               map.fitBounds(
 
                 bounds,
 
                 {
+
 
                   padding:[
 
@@ -1595,17 +2010,23 @@ document
 
                   ],
 
+
                   maxZoom:12
+
 
                 }
 
               );
 
+
             }
+
 
           }
 
+
           catch(error){
+
 
             console.warn(
 
@@ -1615,12 +2036,15 @@ document
 
             );
 
+
           }
+
 
         }
 
 
         else {
+
 
           /*
 
@@ -1634,6 +2058,7 @@ document
 
            */
 
+
           map.flyTo(
 
             [lat, lon],
@@ -1642,10 +2067,12 @@ document
 
           );
 
+
         }
 
 
         // Existing real-time AQI function
+
 
         getAQI(
 
@@ -1658,7 +2085,9 @@ document
 
       })
 
+
       .catch(error => {
+
 
         console.error(
 
@@ -1668,11 +2097,13 @@ document
 
         );
 
+
         alert(
 
           "Location search failed ❌"
 
         );
+
 
       });
 
@@ -1684,7 +2115,9 @@ document
 
 // ===== REGISTER =====
 
+
 function register(){
+
 
   fetch(
 
@@ -1692,33 +2125,47 @@ function register(){
 
     {
 
+
       method:"POST",
+
 
       credentials:"same-origin",
 
+
       headers:csrfHeaders(),
+
 
       body:JSON.stringify({
 
+
         username:user.value,
+
 
         password:pass.value
 
+
       })
+
 
     }
 
   )
 
+
   .then(async r => ({
+
 
     ok:r.ok,
 
+
     data:await r.json()
+
 
   }))
 
+
   .then(({ok, data})=>{
+
 
     if(
 
@@ -1728,15 +2175,19 @@ function register(){
 
     ){
 
+
       alert(
 
         "User registered. Please log in."
 
       );
 
+
     }
 
+
     else {
+
 
       const message =
 
@@ -1752,11 +2203,15 @@ function register(){
 
             );
 
+
       alert(message);
+
 
     }
 
+
   })
+
 
   .catch(
 
@@ -1770,12 +2225,15 @@ function register(){
 
   );
 
+
 }
 
 
 // ===== RESET PASSWORD =====
 
+
 function resetPassword(){
+
 
   const currentPass =
 
@@ -1811,37 +2269,51 @@ function resetPassword(){
 
     {
 
+
       method:"POST",
+
 
       credentials:"same-origin",
 
+
       headers:csrfHeaders(),
 
+
       body:JSON.stringify({
+
 
         current_password:
 
           currentPass,
 
+
         new_password:
 
           newPass
 
+
       })
+
 
     }
 
   )
 
+
   .then(async r => ({
+
 
     ok:r.ok,
 
+
     data:await r.json()
+
 
   }))
 
+
   .then(({ok, data})=>{
+
 
     if(
 
@@ -1851,23 +2323,29 @@ function resetPassword(){
 
     ){
 
+
       alert(
 
         "Password updated. Please log in again."
 
       );
 
+
       loginBox.style.display =
 
         "block";
+
 
       logoutBtn.style.display =
 
         "none";
 
+
     }
 
+
     else {
+
 
       const message =
 
@@ -1883,11 +2361,15 @@ function resetPassword(){
 
             );
 
+
       alert(message);
+
 
     }
 
+
   })
+
 
   .catch(
 
@@ -1901,6 +2383,7 @@ function resetPassword(){
 
   );
 
+
 }
 
 
@@ -1911,6 +2394,7 @@ setInterval(
 
   ()=>{
 
+
     if(
 
       window.lastLat &&
@@ -1918,6 +2402,7 @@ setInterval(
       window.lastLon
 
     ){
+
 
       getAQI(
 
@@ -1927,7 +2412,9 @@ setInterval(
 
       );
 
+
     }
+
 
   },
 
@@ -1949,5 +2436,6 @@ setInterval(
 
 
 </body>
+
 
 </html>
