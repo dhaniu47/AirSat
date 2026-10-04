@@ -1,528 +1,1953 @@
 <!DOCTYPE html>
 <html>
+
 <head>
+
 <title>AirSat AI</title>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
+
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
+
 <style>
-html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family:Arial;}
-#map { height:100%; width:100%; }
-#map.dark-map .leaflet-tile { filter: invert(1) hue-rotate(180deg) brightness(.78) contrast(1.08); }
+
+html, body {
+  margin:0;
+  padding:0;
+  height:100%;
+  overflow:hidden;
+  font-family:Arial;
+}
+
+
+#map {
+  height:100%;
+  width:100%;
+}
+
+
+#map.dark-map .leaflet-tile {
+  filter: invert(1) hue-rotate(180deg) brightness(.78) contrast(1.08);
+}
+
+
 .blink {
   animation: blinkAnim 0.8s infinite alternate;
 }
 
+
 @keyframes blinkAnim {
-  from { color: red; }
-  to { color: black; }
+
+  from {
+    color: red;
+  }
+
+  to {
+    color: black;
+  }
+
 }
+
+
 #topBar {
-  position:absolute; top:0; left:0; width:100%;
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
   box-sizing:border-box;
-  background:rgba(0,0,0,0.7); color:white;
-  padding:10px; z-index:5000;
-  display:flex; align-items:center; gap:8px;
+  background:rgba(0,0,0,0.7);
+  color:white;
+  padding:10px;
+  z-index:5000;
+  display:flex;
+  align-items:center;
+  gap:8px;
 }
-#topBar span { margin-right:auto; }
-#topBar button { cursor:pointer; }
+
+
+#topBar span {
+  margin-right:auto;
+}
+
+
+#topBar button {
+  cursor:pointer;
+}
+
 
 #searchBox {
-  position:absolute; top:70px; left:50%;
+  position:absolute;
+  top:70px;
+  left:50%;
   transform:translateX(-50%);
-  padding:8px; width:260px;
-  border-radius:20px; border:1px solid #ccc;
+  padding:8px;
+  width:260px;
+  border-radius:20px;
+  border:1px solid #ccc;
   z-index:2000;
 }
 
-#infoBox, #dashboardBox {
-  position:absolute; top:60px;
-  background:white; padding:10px;
-  border-radius:8px; z-index:1000;
+
+#infoBox,
+#dashboardBox {
+  position:absolute;
+  top:60px;
+  background:white;
+  padding:10px;
+  border-radius:8px;
+  z-index:1000;
 }
 
-#infoBox { left:10px; }
-#dashboardBox { right:10px; width:200px; }
+
+#infoBox {
+  left:10px;
+}
+
+
+#dashboardBox {
+  right:10px;
+  width:200px;
+}
+
 
 .legend {
-  position:absolute; bottom:20px; right:10px;
-  background:white; padding:10px;
-  border-radius:10px; z-index:1000;
+  position:absolute;
+  bottom:20px;
+  right:10px;
+  background:white;
+  padding:10px;
+  border-radius:10px;
+  z-index:1000;
 }
 
-#loginBox{
+
+#loginBox {
   position:absolute;
-  top:50%; left:50%;
+  top:50%;
+  left:50%;
   transform:translate(-50%,-50%);
   background:white;
   padding:20px;
   border-radius:10px;
   z-index:3000;
 }
+
+
+/* ===== CURRENT LOCATION BUTTON ===== */
+
+#currentLocationBtn {
+  position:absolute;
+  top:110px;
+  left:10px;
+  z-index:2000;
+
+  padding:10px 14px;
+
+  border:none;
+  border-radius:8px;
+
+  background:white;
+
+  cursor:pointer;
+
+  font-weight:bold;
+
+  box-shadow:0 2px 6px rgba(0,0,0,0.25);
+}
+
+#currentLocationBtn:hover {
+  background:#f2f2f2;
+}
+
+#currentLocationBtn:disabled {
+  opacity:0.7;
+  cursor:wait;
+}
+
+
 </style>
+
 </head>
+
 
 <body>
 
+
 <div id="loginBox">
+
   <div id="loginForm">
+
     <h3>Login</h3>
+
     <input id="user" placeholder="Username"><br><br>
+
     <input id="pass" type="password" placeholder="Password"><br><br>
 
     <button onclick="login()">Login</button>
+
     <button onclick="register()">Register</button>
+
     <button onclick="resetPassword()">Reset</button>
+
   </div>
+
 </div>
+
 
 <input id="searchBox" placeholder="Search city...">
 
+
 <div id="topBar">
+
   <span>🌍 AirSat AI</span>
+
   <button onclick="toggleMode()">Switch</button>
-  <button id="logoutBtn" onclick="logoutUser()" style="display:none;">Logout</button>
+
+  <button id="logoutBtn"
+          onclick="logoutUser()"
+          style="display:none;">
+
+    Logout
+
+  </button>
+
 </div>
 
-<div id="infoBox">Click map to get AQI</div>
-<div id="dashboardBox">Loading...</div>
+
+<div id="infoBox">
+  Click map to get AQI
+</div>
+
+
+<!-- CURRENT LOCATION BUTTON -->
+
+<button id="currentLocationBtn"
+        onclick="getCurrentLocation()">
+
+  📍 My Current Location
+
+</button>
+
+
+<div id="dashboardBox">
+  Loading...
+</div>
+
 
 <div class="legend">
+
   <div>🟩 0–50</div>
+
   <div>🟨 51–100</div>
+
   <div>🟧 101–150</div>
+
   <div>🟥 151–200</div>
+
   <div>🟪 200+</div>
+
 </div>
 
-<canvas id="aqiChart" style="
-position:absolute;
-bottom:120px;
-left:10px;
-width:250px;
-height:150px;
-background:white;
-padding:10px;
-border-radius:10px;
-z-index:1000;"></canvas>
+
+<canvas id="aqiChart"
+        style="
+        position:absolute;
+        bottom:120px;
+        left:10px;
+        width:250px;
+        height:150px;
+        background:white;
+        padding:10px;
+        border-radius:10px;
+        z-index:1000;">
+
+</canvas>
+
 
 <div id="map"></div>
 
-<!-- SAME HEAD + STYLE (NO CHANGE) -->
 
 <!-- SAME HEAD + STYLE (NO CHANGE) -->
+
+
+<!-- SAME HEAD + STYLE (NO CHANGE) -->
+
+
 <script>
+
+
 let heatLayer = null;
+
+
 function loadHeatmap(){
 
   fetch("/api/data/")
+
   .then(r => r.json())
+
   .then(res => {
 
     if(!res.data || res.data.length === 0){
+
       console.log("No heatmap data yet");
+
       return;
     }
 
+
     let points = res.data.map(d => [
+
       d.lat,
+
       d.lon,
+
       d.no2 / 300
+
     ]);
 
+
     if(heatLayer){
+
       map.removeLayer(heatLayer);
+
     }
 
+
     heatLayer = L.heatLayer(points, {
+
       radius: 25,
+
       blur: 20,
+
       maxZoom: 10
+
     }).addTo(map);
 
   });
 
 }
-loadHeatmap(); // first load
+
+
+loadHeatmap();
+
+
 // ===== TOGGLE =====
+
 let useBackend = false;
+
+
 function toggleMode(){
+
   useBackend = !useBackend;
-  alert(useBackend ? "Backend Mode 🚀" : "Live API 🌐");
+
+  alert(
+
+    useBackend
+
+      ? "Backend Mode 🚀"
+
+      : "Live API 🌐"
+
+  );
+
 }
+
 
 // ===== ELEMENTS =====
+
 const user = document.getElementById("user");
+
 const pass = document.getElementById("pass");
+
 const loginBox = document.getElementById("loginBox");
+
 const dashboardBox = document.getElementById("dashboardBox");
 
+
 // ===== AQI COLOR =====
+
 function getAQIColor(aqi){
+
   aqi = Number(aqi);
-  if(aqi <= 50) return "🟩 Good";
-  if(aqi <= 100) return "🟨 Moderate";
-  if(aqi <= 150) return "🟧 Unhealthy (Sensitive)";
-  if(aqi <= 200) return "🟥 Unhealthy";
+
+  if(aqi <= 50)
+
+    return "🟩 Good";
+
+  if(aqi <= 100)
+
+    return "🟨 Moderate";
+
+  if(aqi <= 150)
+
+    return "🟧 Unhealthy (Sensitive)";
+
+  if(aqi <= 200)
+
+    return "🟥 Unhealthy";
+
   return "🟪 Hazardous";
+
 }
+
 
 // ===== CSRF =====
+
 function getCookie(name){
-  const cookies = document.cookie ? document.cookie.split(";") : [];
+
+  const cookies = document.cookie
+
+    ? document.cookie.split(";")
+
+    : [];
+
+
   for (const cookie of cookies){
-    const [key, ...rest] = cookie.trim().split("=");
-    if (key === name) return decodeURIComponent(rest.join("="));
+
+    const [key, ...rest] =
+
+      cookie.trim().split("=");
+
+    if (key === name)
+
+      return decodeURIComponent(rest.join("="));
+
   }
+
+
   return null;
+
 }
+
 
 function csrfHeaders(){
+
   return {
+
     "Content-Type":"application/json",
-    "X-CSRFToken":getCookie("csrftoken") || ""
+
+    "X-CSRFToken":
+
+      getCookie("csrftoken") || ""
+
   };
+
 }
+
 
 // ===== LOGIN =====
+
 function login(){
+
   fetch("/api/login/", {
+
     method:"POST",
+
     credentials:"same-origin",
+
     headers:csrfHeaders(),
-    body:JSON.stringify({username:user.value,password:pass.value})
+
+    body:JSON.stringify({
+
+      username:user.value,
+
+      password:pass.value
+
+    })
+
   })
-  .then(async r => ({ok:r.ok, data:await r.json()}))
+
+  .then(async r => ({
+
+    ok:r.ok,
+
+    data:await r.json()
+
+  }))
+
   .then(({ok, data})=>{
+
     if(ok && data.status==="success"){
+
       loginBox.style.display="none";
+
       logoutBtn.style.display="inline-block";
+
       loadHeatmap();
+
       loadAQIMarkers();
-    } else {
-      alert(data.error || "Invalid login");
+
     }
+
+    else {
+
+      alert(data.error || "Invalid login");
+
+    }
+
   })
+
   .catch(()=>alert("Login request failed"));
+
 }
+
 
 // ===== LOGOUT =====
+
 function syncAuthState(){
-  fetch("/api/data/", {credentials:"same-origin"})
-    .then(r=>{
-      if(r.ok){
-        loginBox.style.display="none";
-        logoutBtn.style.display="inline-block";
-      } else {
-        loginBox.style.display="block";
-        logoutBtn.style.display="none";
-      }
-    })
-    .catch(()=>{
+
+  fetch("/api/data/", {
+
+    credentials:"same-origin"
+
+  })
+
+  .then(r=>{
+
+    if(r.ok){
+
+      loginBox.style.display="none";
+
+      logoutBtn.style.display="inline-block";
+
+    }
+
+    else {
+
       loginBox.style.display="block";
+
       logoutBtn.style.display="none";
-    });
-}
 
-function logoutUser(){
-  fetch("/api/logout/", {
-    method:"POST",
-    credentials:"same-origin",
-    headers:csrfHeaders()
-  })
-  .then(async r => ({ok:r.ok, data:await r.json()}))
-  .then(({ok, data})=>{
-    if(ok){
-      loginBox.style.display="block";
-      logoutBtn.style.display="none";
-      if(aqiMarkerLayer) aqiMarkerLayer.clearLayers();
-      if(heatLayer) map.removeLayer(heatLayer);
-    } else {
-      alert(data.error || "Logout failed");
-    }
-  })
-  .catch(()=>alert("Logout request failed"));
-}
-
-// ===== MAP =====
-var map = L.map('map').setView([22.5, 78.9], 5);
-
-// 🌍 Light
-const lightMap = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-  {
-    attribution: '&copy; Esri &mdash; Source: Esri, OpenStreetMap contributors, GIS User Community',
-    maxZoom: 19
-  }
-);
-
-// 🌙 Dark
-const darkMap = L.tileLayer(
-  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-  {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 19
-  }
-);
-
-// 🛰️ Satellite
-const satelliteMap = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  {
-    attribution: '&copy; Esri',
-    maxZoom: 19
-  }
-);
-
-lightMap.addTo(map);
-
-const aqiMarkerLayer = L.layerGroup().addTo(map);
-
-function aqiColor(aqi){
-  aqi = Number(aqi);
-  if(aqi <= 50) return '#22a06b';
-  if(aqi <= 100) return '#f0c419';
-  if(aqi <= 150) return '#f08a24';
-  if(aqi <= 200) return '#d6336c';
-  return '#7c4dce';
-}
-
-function loadAQIMarkers(){
-  fetch("/api/data/", {credentials:"same-origin"})
-    .then(r => r.ok ? r.json() : null)
-    .then(res => {
-      if(!res || !res.data) return;
-      aqiMarkerLayer.clearLayers();
-
-      res.data.forEach(d => {
-        const aqi = Number(d.no2);
-        const color = aqiColor(aqi);
-        const icon = L.divIcon({
-          className: "aqi-marker",
-          html: '<div style="background:'+color+';color:white;font-weight:bold;font-size:12px;line-height:20px;text-align:center;min-width:28px;height:20px;padding:0 3px;border-radius:3px;border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 3px rgba(0,0,0,.45);">'+Math.round(aqi)+'</div>',
-          iconSize: [34, 20],
-          iconAnchor: [17, 10]
-        });
-        L.marker([d.lat, d.lon], {icon:icon})
-          .bindTooltip('AQI: ' + Math.round(aqi))
-          .addTo(aqiMarkerLayer);
-      });
-    });
-}
-
-L.control.layers(
-  {
-    "☀ Light": lightMap,
-    "🌙 Dark": darkMap,
-    "🛰 Satellite": satelliteMap
-  },
-  {
-    "🌫 AQI": aqiMarkerLayer
-  }
-).addTo(map);
-
-map.on('baselayerchange', function(e){
-  document.getElementById('map').classList.toggle('dark-map', e.name === '🌙 Dark');
-});
-
-// ===== GRAPH =====
-let chartData = [];
-const chart = new Chart(document.getElementById('aqiChart'), {
-  type: 'line',
-  data: { labels: [], datasets: [{ label:"AQI", data: [] }] },
-  options: { responsive:false }
-});
-
-function updateGraph(aqi){
-  let t = new Date().toLocaleTimeString();
-  chartData.push(aqi);
-
-  if(chartData.length > 10){
-    chartData.shift();
-    chart.data.labels.shift();
-  }
-
-  chart.data.labels.push(t);
-  chart.data.datasets[0].data = chartData;
-  chart.update();
-}
-
-// ===== CORRECT AQI FETCH =====
-function getAQI(lat, lon, popup = null){
-
-  fetch(`/pollution/?lat=${lat}&lon=${lon}&t=${Date.now()}`, {credentials:"same-origin"})
-  .then(r=>r.json())
-  .then(d=>{
-
-    console.log("API RESULT:", d);
-
-    if(!d || d.error){
-      if(popup) popup.setContent("No data ❌");
-      return;
     }
 
-    let aqi = d.aqi;
-    let level = getAQIColor(aqi);
-
-    updateGraph(aqi);
-
-    // ✅ DASHBOARD
-    let oldAQI = window.prevAQI || 0;
-    window.prevAQI = aqi;
-
-    let blink = Math.abs(oldAQI - aqi) > 5 ? "blink" : "";
-
-    dashboardBox.innerHTML = `
-       <b>Dashboard</b><br>
-       ${d.city}<br>
-       AQI: <span class="${blink}">${aqi}</span><br>
-       ${level}<br>
-       🔮 Future AQI: <span id="prediction">Loading...</span>
-      `;
-
-    // ✅ POPUP FIX (THIS WAS MISSING)
-    if(popup){
-      popup.setContent(`
-        <b>${d.city}</b><br>
-        AQI: ${aqi}<br>
-        ${level}
-      `);
-    }
-
-    fetch("/api/predict/", {credentials:"same-origin"})
-    .then(r=>r.json())
-    .then(p=>{
-      document.getElementById("prediction").innerText = p.prediction;
-    });
-
   })
+
   .catch(()=>{
-    if(popup) popup.setContent("Error fetching AQI ❌");
+
+    loginBox.style.display="block";
+
+    logoutBtn.style.display="none";
+
   });
 
 }
-// ===== FIXED MAP CLICK =====
-map.on('click', function(e){
 
-  let lat = e.latlng.lat;
-  let lon = e.latlng.lng;
-  window.lastLat = lat;
-  window.lastLon = lon;
 
-  let popup = L.popup()
-    .setLatLng([lat, lon])
-    .setContent("Loading AQI...")
-    .openOn(map);
+function logoutUser(){
 
-  // ✅ PASS popup here
-  getAQI(lat, lon, popup);
+  fetch("/api/logout/", {
 
-});
+    method:"POST",
 
-// ===== SEARCH (WORKING) =====
-let searchMarker = null;
-let highlightCircle = null;
+    credentials:"same-origin",
 
-document.getElementById("searchBox").addEventListener("keydown", function(e){
-  if(e.key === "Enter"){
+    headers:csrfHeaders()
 
-    let query = this.value + ", India";
+  })
 
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`)
-    .then(r=>r.json())
-    .then(data=>{
+  .then(async r => ({
 
-      if(data.length === 0){
-        alert("Location not found ❌");
-        return;
-      }
+    ok:r.ok,
 
-      let lat = parseFloat(data[0].lat);
-      let lon = parseFloat(data[0].lon);
-      window.lastLat = lat;
-      window.lastLon = lon;
+    data:await r.json()
 
-      map.flyTo([lat, lon], 12);
+  }))
 
-      if(searchMarker) map.removeLayer(searchMarker);
-      searchMarker = L.marker([lat, lon]).addTo(map);
+  .then(({ok, data})=>{
 
-      if(highlightCircle) map.removeLayer(highlightCircle);
-      highlightCircle = L.circle([lat, lon], {
-        radius: 5000,
-        color: "blue",
-        fillOpacity: 0.2
-      }).addTo(map);
+    if(ok){
 
-      getAQI(lat, lon); // ✅ FIXED
+      loginBox.style.display="block";
+
+      logoutBtn.style.display="none";
+
+      if(aqiMarkerLayer)
+
+        aqiMarkerLayer.clearLayers();
+
+      if(heatLayer)
+
+        map.removeLayer(heatLayer);
+
+    }
+
+    else {
+
+      alert(data.error || "Logout failed");
+
+    }
+
+  })
+
+  .catch(()=>alert("Logout request failed"));
+
+}
+
+
+// ===== MAP =====
+
+var map =
+
+  L.map('map').setView([22.5, 78.9], 5);
+
+
+// 🌍 Light
+
+const lightMap = L.tileLayer(
+
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+
+  {
+
+    attribution:'&copy; OpenStreetMap contributors',
+
+    maxZoom:19
+
+  }
+
+);
+
+
+// 🌙 Dark
+
+const darkMap = L.tileLayer(
+
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+
+  {
+
+    attribution:'&copy; OpenStreetMap contributors',
+
+    maxZoom:19
+
+  }
+
+);
+
+
+// 🛰️ Satellite
+
+const satelliteMap = L.tileLayer(
+
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+
+  {
+
+    attribution:'&copy; Esri',
+
+    maxZoom:19
+
+  }
+
+);
+
+
+lightMap.addTo(map);
+
+
+const aqiMarkerLayer =
+
+  L.layerGroup().addTo(map);
+
+
+function aqiColor(aqi){
+
+  aqi = Number(aqi);
+
+  if(aqi <= 50)
+
+    return '#22a06b';
+
+  if(aqi <= 100)
+
+    return '#f0c419';
+
+  if(aqi <= 150)
+
+    return '#f08a24';
+
+  if(aqi <= 200)
+
+    return '#d6336c';
+
+  return '#7c4dce';
+
+}
+
+
+function loadAQIMarkers(){
+
+  fetch("/api/data/", {
+
+    credentials:"same-origin"
+
+  })
+
+  .then(r =>
+
+    r.ok ? r.json() : null
+
+  )
+
+  .then(res => {
+
+    if(!res || !res.data)
+
+      return;
+
+    aqiMarkerLayer.clearLayers();
+
+
+    res.data.forEach(d => {
+
+      const aqi = Number(d.no2);
+
+      const color = aqiColor(aqi);
+
+
+      const icon = L.divIcon({
+
+        className:"aqi-marker",
+
+        html:
+
+          '<div style="' +
+
+          'background:'+color+';' +
+
+          'color:white;' +
+
+          'font-weight:bold;' +
+
+          'font-size:12px;' +
+
+          'line-height:20px;' +
+
+          'text-align:center;' +
+
+          'min-width:28px;' +
+
+          'height:20px;' +
+
+          'padding:0 3px;' +
+
+          'border-radius:3px;' +
+
+          'border:1px solid rgba(255,255,255,.9);' +
+
+          'box-shadow:0 1px 3px rgba(0,0,0,.45);' +
+
+          '">' +
+
+          Math.round(aqi) +
+
+          '</div>',
+
+        iconSize:[34,20],
+
+        iconAnchor:[17,10]
+
+      });
+
+
+      L.marker(
+
+        [d.lat, d.lon],
+
+        {icon:icon}
+
+      )
+
+      .bindTooltip(
+
+        'AQI: ' + Math.round(aqi)
+
+      )
+
+      .addTo(aqiMarkerLayer);
 
     });
 
+  });
+
+}
+
+
+L.control.layers(
+
+  {
+
+    "☀ Light":lightMap,
+
+    "🌙 Dark":darkMap,
+
+    "🛰 Satellite":satelliteMap
+
+  },
+
+  {
+
+    "🌫 AQI":aqiMarkerLayer
+
   }
+
+).addTo(map);
+
+
+map.on(
+
+  'baselayerchange',
+
+  function(e){
+
+    document
+
+      .getElementById('map')
+
+      .classList
+
+      .toggle(
+
+        'dark-map',
+
+        e.name === '🌙 Dark'
+
+      );
+
+  }
+
+);
+
+
+// ===== GRAPH =====
+
+let chartData = [];
+
+
+const chart = new Chart(
+
+  document.getElementById('aqiChart'),
+
+  {
+
+    type:'line',
+
+    data:{
+
+      labels:[],
+
+      datasets:[
+
+        {
+
+          label:"AQI",
+
+          data:[]
+
+        }
+
+      ]
+
+    },
+
+    options:{
+
+      responsive:false
+
+    }
+
+  }
+
+);
+
+
+function updateGraph(aqi){
+
+  let t =
+
+    new Date().toLocaleTimeString();
+
+  chartData.push(aqi);
+
+
+  if(chartData.length > 10){
+
+    chartData.shift();
+
+    chart.data.labels.shift();
+
+  }
+
+
+  chart.data.labels.push(t);
+
+  chart.data.datasets[0].data =
+
+    chartData;
+
+  chart.update();
+
+}
+
+
+// ===== CORRECT AQI FETCH =====
+
+function getAQI(
+
+  lat,
+
+  lon,
+
+  popup = null,
+
+  popupTitle = null
+
+){
+
+  fetch(
+
+    `/pollution/?lat=${lat}&lon=${lon}&t=${Date.now()}`,
+
+    {
+
+      credentials:"same-origin"
+
+    }
+
+  )
+
+  .then(r => r.json())
+
+  .then(d => {
+
+
+    console.log(
+
+      "API RESULT:",
+
+      d
+
+    );
+
+
+    if(!d || d.error){
+
+      if(popup)
+
+        popup.setContent(
+
+          "No data ❌"
+
+        );
+
+      return;
+
+    }
+
+
+    let aqi = d.aqi;
+
+    let level =
+
+      getAQIColor(aqi);
+
+
+    updateGraph(aqi);
+
+
+    // DASHBOARD
+
+    let oldAQI =
+
+      window.prevAQI || 0;
+
+
+    window.prevAQI = aqi;
+
+
+    let blink =
+
+      Math.abs(oldAQI - aqi) > 5
+
+        ? "blink"
+
+        : "";
+
+
+    dashboardBox.innerHTML = `
+
+      <b>Dashboard</b><br>
+
+      ${d.city}<br>
+
+      AQI:
+
+      <span class="${blink}">
+
+        ${aqi}
+
+      </span><br>
+
+      ${level}<br>
+
+      🔮 Future AQI:
+
+      <span id="prediction">
+
+        Loading...
+
+      </span>
+
+    `;
+
+
+    // POPUP FIX
+
+    if(popup){
+
+      if(popupTitle){
+
+        popup.setContent(`
+
+          <b>📍 ${popupTitle}</b><br>
+
+          ${d.city}<br>
+
+          AQI: ${aqi}<br>
+
+          ${level}
+
+        `);
+
+      }
+
+      else {
+
+        popup.setContent(`
+
+          <b>${d.city}</b><br>
+
+          AQI: ${aqi}<br>
+
+          ${level}
+
+        `);
+
+      }
+
+    }
+
+
+    fetch(
+
+      "/api/predict/",
+
+      {
+
+        credentials:"same-origin"
+
+      }
+
+    )
+
+    .then(r => r.json())
+
+    .then(p => {
+
+      document
+
+        .getElementById("prediction")
+
+        .innerText =
+
+        p.prediction;
+
+    });
+
+
+  })
+
+  .catch(()=>{
+
+    if(popup)
+
+      popup.setContent(
+
+        "Error fetching AQI ❌"
+
+      );
+
+  });
+
+}
+
+
+// =====================================================
+// ===== CURRENT LOCATION ==============================
+// =====================================================
+
+let currentLocationMarker = null;
+
+let currentLocationPopup = null;
+
+
+function getCurrentLocation(){
+
+  const button =
+
+    document.getElementById(
+
+      "currentLocationBtn"
+
+    );
+
+
+  if(!navigator.geolocation){
+
+    alert(
+
+      "Geolocation is not supported by this browser."
+
+    );
+
+    return;
+
+  }
+
+
+  button.disabled = true;
+
+  button.innerText =
+
+    "📍 Getting location...";
+
+
+  navigator.geolocation.getCurrentPosition(
+
+    function(position){
+
+      const lat =
+
+        position.coords.latitude;
+
+      const lon =
+
+        position.coords.longitude;
+
+
+      // Store location so the existing
+
+      // 5-second refresh continues
+
+      window.lastLat = lat;
+
+      window.lastLon = lon;
+
+
+      // Move map to current location
+
+      map.flyTo(
+
+        [lat, lon],
+
+        13
+
+      );
+
+
+      // Remove previous current-location marker
+
+      if(currentLocationMarker){
+
+        map.removeLayer(
+
+          currentLocationMarker
+
+        );
+
+      }
+
+
+      // Create popup
+
+      currentLocationPopup =
+
+        L.popup({
+
+          closeButton:true
+
+        })
+
+        .setLatLng(
+
+          [lat, lon]
+
+        )
+
+        .setContent(`
+
+          <b>📍 Current Location AQI</b><br>
+
+          Loading AQI...
+
+        `);
+
+
+      // Create current-location marker
+
+      currentLocationMarker =
+
+        L.marker(
+
+          [lat, lon]
+
+        )
+
+        .addTo(map);
+
+
+      // Open popup
+
+      currentLocationMarker
+
+        .bindPopup(
+
+          currentLocationPopup
+
+        )
+
+        .openPopup();
+
+
+      // Get real AQI using
+
+      // the existing API
+
+      getAQI(
+
+        lat,
+
+        lon,
+
+        currentLocationPopup,
+
+        "Current Location AQI"
+
+      );
+
+
+      button.disabled = false;
+
+      button.innerText =
+
+        "📍 My Current Location";
+
+    },
+
+
+    function(error){
+
+      button.disabled = false;
+
+      button.innerText =
+
+        "📍 My Current Location";
+
+
+      if(error.code === 1){
+
+        alert(
+
+          "Location permission was denied. Please allow location access for AirSat."
+
+        );
+
+      }
+
+      else if(error.code === 2){
+
+        alert(
+
+          "Your current location could not be determined."
+
+        );
+
+      }
+
+      else if(error.code === 3){
+
+        alert(
+
+          "Location request timed out. Please try again."
+
+        );
+
+      }
+
+      else{
+
+        alert(
+
+          "Unable to get your current location."
+
+        );
+
+      }
+
+    },
+
+
+    {
+
+      enableHighAccuracy:true,
+
+      timeout:15000,
+
+      maximumAge:0
+
+    }
+
+  );
+
+}
+
+
+// ===== FIXED MAP CLICK =====
+
+map.on('click', function(e){
+
+  let lat =
+
+    e.latlng.lat;
+
+  let lon =
+
+    e.latlng.lng;
+
+
+  window.lastLat = lat;
+
+  window.lastLon = lon;
+
+
+  let popup = L.popup()
+
+    .setLatLng(
+
+      [lat, lon]
+
+    )
+
+    .setContent(
+
+      "Loading AQI..."
+
+    )
+
+    .openOn(map);
+
+
+  // PASS popup here
+
+  getAQI(
+
+    lat,
+
+    lon,
+
+    popup
+
+  );
+
 });
 
-// ===== REGISTER =====
-function register(){
-  fetch("/api/register/", {
-    method:"POST",
-    credentials:"same-origin",
-    headers:csrfHeaders(),
-    body:JSON.stringify({username:user.value,password:pass.value})
-  })
-  .then(async r => ({ok:r.ok, data:await r.json()}))
-  .then(({ok, data})=>{
-    if(ok && data.status==="created"){
-      alert("User registered. Please log in.");
-    } else {
-      const message = Array.isArray(data.error) ? data.error.join("\\n") : (data.error || "Registration failed");
-      alert(message);
+
+// =====================================================
+// ===== SEARCH WITH REAL GEOGRAPHICAL BOUNDARY =====
+// =====================================================
+
+let searchMarker = null;
+
+let boundaryLayer = null;
+
+
+document
+
+  .getElementById("searchBox")
+
+  .addEventListener(
+
+    "keydown",
+
+    function(e){
+
+      if(e.key !== "Enter"){
+
+        return;
+
+      }
+
+
+      const searchText =
+
+        this.value.trim();
+
+
+      if(!searchText){
+
+        return;
+
+      }
+
+
+      let query =
+
+        searchText + ", India";
+
+
+      /*
+
+       * polygon_geojson=1 asks Nominatim
+
+       * to return the actual geographical
+
+       * boundary when one is available.
+
+       */
+
+
+      fetch(
+
+        `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&limit=1&q=${encodeURIComponent(query)}`
+
+      )
+
+      .then(r => r.json())
+
+      .then(data => {
+
+
+        if(data.length === 0){
+
+          alert(
+
+            "Location not found ❌"
+
+          );
+
+          return;
+
+        }
+
+
+        const result =
+
+          data[0];
+
+
+        const lat =
+
+          parseFloat(result.lat);
+
+        const lon =
+
+          parseFloat(result.lon);
+
+
+        window.lastLat =
+
+          lat;
+
+        window.lastLon =
+
+          lon;
+
+
+        // Remove previous marker
+
+        if(searchMarker){
+
+          map.removeLayer(
+
+            searchMarker
+
+          );
+
+        }
+
+
+        searchMarker =
+
+          L.marker(
+
+            [lat, lon]
+
+          )
+
+          .bindPopup(
+
+            `<b>${result.display_name}</b>`
+
+          )
+
+          .addTo(map)
+
+          .openPopup();
+
+
+        // Remove previous boundary
+
+        if(boundaryLayer){
+
+          map.removeLayer(
+
+            boundaryLayer
+
+          );
+
+          boundaryLayer = null;
+
+        }
+
+
+        /*
+
+         * Draw the REAL boundary.
+
+         *
+
+         * No artificial 5 km circle.
+
+         */
+
+
+        if(result.geojson){
+
+          boundaryLayer =
+
+            L.geoJSON(
+
+              result.geojson,
+
+              {
+
+                style:{
+
+                  color:"#0066ff",
+
+                  weight:3,
+
+                  opacity:0.9,
+
+                  fillColor:"#3388ff",
+
+                  fillOpacity:0.12
+
+                }
+
+              }
+
+            )
+
+            .addTo(map);
+
+
+          /*
+
+           * Automatically fit the map
+
+           * to the actual boundary.
+
+           */
+
+
+          try{
+
+            const bounds =
+
+              boundaryLayer.getBounds();
+
+
+            if(bounds.isValid()){
+
+              map.fitBounds(
+
+                bounds,
+
+                {
+
+                  padding:[
+
+                    30,
+
+                    30
+
+                  ],
+
+                  maxZoom:12
+
+                }
+
+              );
+
+            }
+
+          }
+
+          catch(error){
+
+            console.warn(
+
+              "Could not fit boundary:",
+
+              error
+
+            );
+
+          }
+
+        }
+
+
+        else {
+
+          /*
+
+           * Some Nominatim results may not
+
+           * provide a polygon boundary.
+
+           * In that case we simply keep the
+
+           * marker and center the map.
+
+           */
+
+          map.flyTo(
+
+            [lat, lon],
+
+            12
+
+          );
+
+        }
+
+
+        // Existing real-time AQI function
+
+        getAQI(
+
+          lat,
+
+          lon
+
+        );
+
+
+      })
+
+      .catch(error => {
+
+        console.error(
+
+          "Location search failed:",
+
+          error
+
+        );
+
+        alert(
+
+          "Location search failed ❌"
+
+        );
+
+      });
+
+
     }
+
+  );
+
+
+// ===== REGISTER =====
+
+function register(){
+
+  fetch(
+
+    "/api/register/",
+
+    {
+
+      method:"POST",
+
+      credentials:"same-origin",
+
+      headers:csrfHeaders(),
+
+      body:JSON.stringify({
+
+        username:user.value,
+
+        password:pass.value
+
+      })
+
+    }
+
+  )
+
+  .then(async r => ({
+
+    ok:r.ok,
+
+    data:await r.json()
+
+  }))
+
+  .then(({ok, data})=>{
+
+    if(
+
+      ok &&
+
+      data.status==="created"
+
+    ){
+
+      alert(
+
+        "User registered. Please log in."
+
+      );
+
+    }
+
+    else {
+
+      const message =
+
+        Array.isArray(data.error)
+
+          ? data.error.join("\n")
+
+          : (
+
+              data.error ||
+
+              "Registration failed"
+
+            );
+
+      alert(message);
+
+    }
+
   })
-  .catch(()=>alert("Registration request failed"));
+
+  .catch(
+
+    () =>
+
+      alert(
+
+        "Registration request failed"
+
+      )
+
+  );
+
 }
+
 
 // ===== RESET PASSWORD =====
+
 function resetPassword(){
-  const currentPass = prompt("Enter your current password:");
-  if(currentPass === null) return;
 
-  const newPass = prompt("Enter your new password:");
-  if(newPass === null) return;
+  const currentPass =
 
-  fetch("/api/reset-password/", {
-    method:"POST",
-    credentials:"same-origin",
-    headers:csrfHeaders(),
-    body:JSON.stringify({current_password:currentPass,new_password:newPass})
-  })
-  .then(async r => ({ok:r.ok, data:await r.json()}))
-  .then(({ok, data})=>{
-    if(ok && data.status==="updated"){
-      alert("Password updated. Please log in again.");
-      loginBox.style.display="block";
-      logoutBtn.style.display="none";
-    } else {
-      const message = Array.isArray(data.error) ? data.error.join("\\n") : (data.error || "Password update failed");
-      alert(message);
+    prompt(
+
+      "Enter your current password:"
+
+    );
+
+
+  if(currentPass === null)
+
+    return;
+
+
+  const newPass =
+
+    prompt(
+
+      "Enter your new password:"
+
+    );
+
+
+  if(newPass === null)
+
+    return;
+
+
+  fetch(
+
+    "/api/reset-password/",
+
+    {
+
+      method:"POST",
+
+      credentials:"same-origin",
+
+      headers:csrfHeaders(),
+
+      body:JSON.stringify({
+
+        current_password:
+
+          currentPass,
+
+        new_password:
+
+          newPass
+
+      })
+
     }
+
+  )
+
+  .then(async r => ({
+
+    ok:r.ok,
+
+    data:await r.json()
+
+  }))
+
+  .then(({ok, data})=>{
+
+    if(
+
+      ok &&
+
+      data.status==="updated"
+
+    ){
+
+      alert(
+
+        "Password updated. Please log in again."
+
+      );
+
+      loginBox.style.display =
+
+        "block";
+
+      logoutBtn.style.display =
+
+        "none";
+
+    }
+
+    else {
+
+      const message =
+
+        Array.isArray(data.error)
+
+          ? data.error.join("\n")
+
+          : (
+
+              data.error ||
+
+              "Password update failed"
+
+            );
+
+      alert(message);
+
+    }
+
   })
-  .catch(()=>alert("Password reset request failed"));
+
+  .catch(
+
+    () =>
+
+      alert(
+
+        "Password reset request failed"
+
+      )
+
+  );
+
 }
 
+
 syncAuthState();
-  setInterval(()=>{
-  if(window.lastLat && window.lastLon){
-    getAQI(window.lastLat, window.lastLon);
-  }
-}, 5000);
-setInterval(loadHeatmap, 10000);
+
+
+setInterval(
+
+  ()=>{
+
+    if(
+
+      window.lastLat &&
+
+      window.lastLon
+
+    ){
+
+      getAQI(
+
+        window.lastLat,
+
+        window.lastLon
+
+      );
+
+    }
+
+  },
+
+  5000
+
+);
+
+
+setInterval(
+
+  loadHeatmap,
+
+  10000
+
+);
+
+
 </script>
+
+
 </body>
+
 </html>
