@@ -353,7 +353,6 @@ def register(request):
 # RESET PASSWORD
 # ---------------------------------------------------------
 
-@api_login_required
 @require_POST
 def reset_password(request):
     data = parse_json(request)
@@ -663,7 +662,6 @@ def _nearest_cpcb_station(
     }
 
 
-@api_login_required
 @require_GET
 def pollution(request):
 
@@ -772,7 +770,6 @@ def pollution(request):
 # ALL CURRENT CPCB CAAQMS STATIONS
 # ---------------------------------------------------------
 
-@api_login_required
 @require_GET
 def cpcb_stations(request):
 
@@ -820,7 +817,6 @@ def cpcb_stations(request):
 # POLLUTION DATA
 # ---------------------------------------------------------
 
-@api_login_required
 @require_GET
 def get_pollution_data(request):
 
@@ -885,7 +881,6 @@ def predict_future():
     )
 
 
-@api_login_required
 @require_GET
 def predict_api(request):
 
@@ -900,7 +895,6 @@ def predict_api(request):
 # ANALYTICS
 # ---------------------------------------------------------
 
-@api_login_required
 @require_GET
 def analytics_data(request):
 
@@ -929,7 +923,6 @@ def analytics_data(request):
 # SAVE DATA
 # ---------------------------------------------------------
 
-@api_login_required
 @require_POST
 def save_data(request):
 
@@ -942,7 +935,6 @@ def save_data(request):
 # TILES
 # ---------------------------------------------------------
 
-@api_login_required
 @require_GET
 def tiles(request):
 
@@ -955,7 +947,6 @@ def tiles(request):
 # HISTORY
 # ---------------------------------------------------------
 
-@api_login_required
 @require_GET
 def history(request):
 
@@ -968,7 +959,6 @@ def history(request):
 # DASHBOARD
 # ---------------------------------------------------------
 
-@api_login_required
 @require_GET
 def dashboard(request):
 
