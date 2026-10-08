@@ -834,160 +834,232 @@ function updateGraph(aqi){
 // ===== CORRECT AQI FETCH =====
 
 
-function getAQI(
-  lat,
-  lon,
-  popup = null
-){
+function renderAQIResult(d, popup){
+
+  if(!d || d.error){
+    if(popup){
+      popup.setContent(
+        d && d.error
+          ? d.error
+          : "Current AQI data is temporarily unavailable."
+      );
+    }
+    return;
+  }
+
+  let aqi = Number(d.aqi);
+
+  if(!Number.isFinite(aqi)){
+    if(popup)
+      popup.setContent("AQI value unavailable.");
+    return;
+  }
+
+  let level = getAQIColor(aqi);
+
+  updateGraph(aqi);
+
+  let oldAQI = window.prevAQI || 0;
+  window.prevAQI = aqi;
+
+  let blink =
+    Math.abs(oldAQI - aqi) > 5
+      ? "blink"
+      : "";
+
+  const stationDistance =
+    d.station_distance_km != null
+      ? Number(d.station_distance_km).toFixed(2) + " km"
+      : "N/A";
+
+  const observed =
+    d.observed_at
+      ? new Date(d.observed_at).toLocaleString()
+      : "N/A";
+
+  const sourceLabel =
+    d.source || "AQI provider";
+
+  const methodLabel =
+    d.aqi_method || "";
+
+  const stationLabel =
+    d.station || "Current location";
+
+  dashboardBox.innerHTML = `
+    <b>Dashboard</b><br>
+    <b>${stationLabel}</b><br>
+    AQI:
+    <span class="${blink}">
+      ${Math.round(aqi)}
+    </span><br>
+    ${level}<br>
+    📍 Station distance:
+    ${stationDistance}<br>
+    🕒 Updated:
+    ${observed}<br>
+    📡 Source:
+    ${sourceLabel}<br>
+    🔮 Future AQI:
+    <span id="prediction">
+      Loading...
+    </span>
+  `;
+
+  if(popup){
+    popup.setContent(`
+      <b>${stationLabel}</b><br>
+      <b>AQI:</b> ${Math.round(aqi)}<br>
+      ${level}<br>
+      <small>${sourceLabel}</small><br>
+      <small>${methodLabel}</small><br>
+      📍 Distance: ${stationDistance}<br>
+      🕒 ${observed}
+    `);
+  }
+
+  fetch("/api/predict/", {})
+    .then(r => r.ok ? r.json() : null)
+    .then(p => {
+      const prediction =
+        document.getElementById("prediction");
+
+      if(prediction && p){
+        prediction.innerText =
+          p.prediction ?? "Unavailable";
+      }
+    })
+    .catch(() => {
+      const prediction =
+        document.getElementById("prediction");
+
+      if(prediction)
+        prediction.innerText = "Unavailable";
+    });
+}
+
+
+function getOpenMeteoAQI(lat, lon, popup = null){
+
+  const url =
+    "https://air-quality-api.open-meteo.com/v1/air-quality" +
+    "?latitude=" + encodeURIComponent(lat) +
+    "&longitude=" + encodeURIComponent(lon) +
+    "&current=us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone" +
+    "&timezone=UTC";
+
+  return fetch(url)
+    .then(r => {
+      if(!r.ok)
+        throw new Error("Open-Meteo HTTP " + r.status);
+
+      return r.json();
+    })
+    .then(data => {
+
+      const current = data.current || {};
+
+      if(current.us_aqi == null)
+        throw new Error("Open-Meteo AQI unavailable");
+
+      return {
+        aqi: Number(current.us_aqi),
+        level: getAQIColor(Number(current.us_aqi)),
+        lat: lat,
+        lon: lon,
+        station: "Open-Meteo current air-quality model",
+        station_distance_km: 0,
+        observed_at: current.time,
+        source: "Open-Meteo Air Quality API",
+        aqi_method: "Open-Meteo United States AQI",
+        components: {
+          pm10: current.pm10,
+          pm2_5: current.pm2_5,
+          co: current.carbon_monoxide,
+          no2: current.nitrogen_dioxide,
+          so2: current.sulphur_dioxide,
+          o3: current.ozone
+        }
+      };
+    })
+    .then(d => {
+      renderAQIResult(d, popup);
+      return d;
+    });
+}
+
+
+function getAQI(lat, lon, popup = null){
+
+  const controller =
+    new AbortController();
+
+  const timeout =
+    setTimeout(
+      () => controller.abort(),
+      5000
+    );
 
   fetch(
     `/pollution/?lat=${lat}&lon=${lon}&t=${Date.now()}`,
-    {}
+    {
+      signal: controller.signal
+    }
   )
+  .then(r => {
+    if(!r.ok)
+      throw new Error("AirSat AQI HTTP " + r.status);
 
-  .then(r => r.json())
-
+    return r.json();
+  })
   .then(d => {
 
-    console.log(
-      "OFFICIAL CPCB RESULT:",
-      d
-    );
+    clearTimeout(timeout);
 
-    if(!d || d.error){
+    console.log("AQI RESULT:", d);
 
-      if(popup)
-        popup.setContent(
-          d.error || "No nearby CPCB station data ❌"
-        );
-
+    if(d && !d.error){
+      renderAQIResult(d, popup);
       return;
-
     }
 
-    let aqi = Number(d.aqi);
-
-    let level =
-      getAQIColor(aqi);
-
-    updateGraph(aqi);
-
-    let oldAQI =
-      window.prevAQI || 0;
-
-    window.prevAQI = aqi;
-
-    let blink =
-      Math.abs(oldAQI - aqi) > 5
-        ? "blink"
-        : "";
-
-    const stationDistance =
-      d.station_distance_km != null
-        ? Number(d.station_distance_km).toFixed(2) + " km"
-        : "N/A";
-
-    const observed =
-      d.observed_at
-        ? new Date(d.observed_at).toLocaleString()
-        : "N/A";
-
-    const sourceLabel =
-      d.source || "AQI provider";
-
-    const methodLabel =
-      d.aqi_method || "";
-
-
-    dashboardBox.innerHTML = `
-
-      <b>Dashboard</b><br>
-
-      <b>${d.station}</b><br>
-
-      AQI:
-      <span class="${blink}">
-        ${aqi}
-      </span><br>
-
-      ${level}<br>
-
-      📍 Station distance:
-      ${stationDistance}<br>
-
-      🕒 Updated:
-      ${observed}<br>
-
-      📡 Source:
-      ${sourceLabel}<br>
-
-      🔮 Future AQI:
-      <span id="prediction">
-        Loading...
-      </span>
-
-    `;
-
-    if(popup){
-
-      popup.setContent(`
-
-        <b>${d.station}</b><br>
-
-        <b>AQI:</b>
-        ${aqi}<br>
-
-        ${level}<br>
-
-        <small>${sourceLabel}</small><br>
-
-        <small>${methodLabel}</small><br>
-
-        📍 Distance:
-        ${stationDistance}<br>
-
-        🕒 ${observed}
-
-      `);
-
-    }
-
-    fetch(
-      "/api/predict/",
-      {}
-    )
-
-    .then(r => r.json())
-
-    .then(p => {
-
-      const prediction =
-        document.getElementById(
-          "prediction"
-        );
-
-      if(prediction){
-
-        prediction.innerText =
-          p.prediction;
-
-      }
-
-    });
-
+    throw new Error(
+      d && d.error
+        ? d.error
+        : "AirSat AQI unavailable"
+    );
   })
-
   .catch(err => {
 
-    console.error(
-      "CPCB AQI error:",
+    clearTimeout(timeout);
+
+    console.warn(
+      "AirSat AQI unavailable; using Open-Meteo:",
       err
     );
 
-    if(popup)
-      popup.setContent(
-        "Current AQI data is temporarily unavailable."
+    getOpenMeteoAQI(
+      lat,
+      lon,
+      popup
+    )
+    .catch(fallbackError => {
+
+      console.error(
+        "All AQI providers failed:",
+        fallbackError
       );
+
+      if(popup){
+        popup.setContent(
+          "Current AQI data is temporarily unavailable."
+        );
+      }
+
+      dashboardBox.innerHTML =
+        "<b>AQI unavailable</b><br>" +
+        "All live AQI providers are currently unavailable.";
+    });
 
   });
 
