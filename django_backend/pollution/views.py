@@ -575,16 +575,20 @@ def _openweather_current(lat, lon):
     if not OPENWEATHER_API_KEY:
         return None
 
-    response = requests.get(
-        "https://api.openweathermap.org/data/2.5/air_pollution",
-        params={
-            "lat": lat,
-            "lon": lon,
-            "appid": OPENWEATHER_API_KEY,
-        },
-        timeout=10,
-    )
-    response.raise_for_status()
+    try:
+        response = requests.get(
+            "https://api.openweathermap.org/data/2.5/air_pollution",
+            params={
+                "lat": lat,
+                "lon": lon,
+                "appid": OPENWEATHER_API_KEY,
+            },
+            timeout=8,
+        )
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        print("OpenWeather AQI unavailable; trying Open-Meteo:", exc)
+        return None
 
     payload = response.json()
     item = (payload.get("list") or [None])[0]
@@ -593,7 +597,6 @@ def _openweather_current(lat, lon):
 
     components = item.get("components") or {}
     estimated_aqi, sub_indices = calculate_cpcb_aqi(components)
-
     if estimated_aqi is None:
         return None
 
@@ -614,6 +617,62 @@ def _openweather_current(lat, lon):
         "source": "OpenWeather current Air Pollution API",
         "aqi_method": "CPCB-breakpoint-based estimate from current OpenWeather pollutant concentrations",
         "openweather_aqi": (item.get("main") or {}).get("aqi"),
+        "components": components,
+    }
+
+
+def _openmeteo_current(lat, lon):
+    response = requests.get(
+        "https://air-quality-api.open-meteo.com/v1/air-quality",
+        params={
+            "latitude": lat,
+            "longitude": lon,
+            "current": "pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone",
+            "timezone": "UTC",
+        },
+        timeout=8,
+    )
+    response.raise_for_status()
+
+    payload = response.json()
+    current = payload.get("current") or {}
+
+    components = {
+        "pm10": current.get("pm10"),
+        "pm2_5": current.get("pm2_5"),
+        "co": current.get("carbon_monoxide"),
+        "no2": current.get("nitrogen_dioxide"),
+        "so2": current.get("sulphur_dioxide"),
+        "o3": current.get("ozone"),
+    }
+
+    estimated_aqi, sub_indices = calculate_cpcb_aqi(components)
+    if estimated_aqi is None:
+        return None
+
+    observed_at = current.get("time")
+
+    return {
+        "aqi": estimated_aqi,
+        "level": get_level(estimated_aqi),
+        "lat": lat,
+        "lon": lon,
+        "city": "Current location",
+        "station": "Open-Meteo air-quality model",
+        "station_lat": payload.get("latitude", lat),
+        "station_lon": payload.get("longitude", lon),
+        "station_distance_km": 0,
+        "station_within_25km": False,
+        "observed_at": (
+            f"{observed_at}Z"
+            if observed_at and not observed_at.endswith("Z")
+            else observed_at
+        ),
+        "predominant_pollutant": None,
+        "sub_indices": sub_indices,
+        "source": "Open-Meteo Air Quality API",
+        "aqi_method": "CPCB-breakpoint-based estimate from current Open-Meteo pollutant concentrations",
+        "openweather_aqi": None,
         "components": components,
     }
 
@@ -687,6 +746,13 @@ def pollution(request):
     # This avoids making every click wait for the large CPCB station feed.
     try:
         fallback = _openweather_current(lat, lon)
+
+        if fallback is None:
+            try:
+                fallback = _openmeteo_current(lat, lon)
+            except requests.RequestException as exc:
+                print("Open-Meteo AQI unavailable:", exc)
+                fallback = None
 
         if fallback is not None:
             PollutionData.objects.create(
@@ -772,6 +838,7 @@ def cpcb_stations(request):
                     "CAAQMS live feed"
                 ),
                 "stations": stations,
+                "available": True,
             }
         )
 
@@ -784,21 +851,16 @@ def cpcb_stations(request):
         ValueError,
     ) as exc:
 
-        print(
-            "CPCB station feed error:",
-            exc,
-        )
+        print("CPCB station feed unavailable:", exc)
 
         return JsonResponse(
             {
-                "error": (
-                    "Unable to fetch the "
-                    "current official CPCB "
-                    "station feed."
-                )
-            },
-            status=502,
+                "source": "CPCB CAAQMS live feed unavailable",
+                "stations": [],
+                "available": False,
+            }
         )
+
 
 
 # ---------------------------------------------------------
