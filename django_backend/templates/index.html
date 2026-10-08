@@ -678,7 +678,7 @@ function login(){
     else {
 
 
-      alert(data.error || "Invalid login");
+      console.warn("AirSat login failed:", data.error || "Invalid credentials");
 
 
     }
@@ -687,7 +687,9 @@ function login(){
   })
 
 
-  .catch(()=>alert("Login request failed"));
+  .catch((error)=>{
+    console.warn("AirSat login request failed:", error);
+  });
 
 
 }
@@ -809,7 +811,7 @@ function logoutUser(){
     else {
 
 
-      alert(data.error || "Logout failed");
+      console.warn("AirSat logout failed:", data.error || "Logout failed");
 
 
     }
@@ -818,7 +820,9 @@ function logoutUser(){
   })
 
 
-  .catch(()=>alert("Logout request failed"));
+  .catch((error)=>{
+    console.warn("AirSat logout request failed:", error);
+  });
 
 
 }
