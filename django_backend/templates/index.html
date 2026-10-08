@@ -316,27 +316,6 @@ html, body {
 <body>
 
 
-<div id="loginBox">
-
-  <div id="loginForm">
-
-    <h3>Login</h3>
-
-    <input id="user" placeholder="Username"><br><br>
-
-    <input id="pass" type="password" placeholder="Password"><br><br>
-
-    <button onclick="login()">Login</button>
-
-    <button onclick="register()">Register</button>
-
-    <button onclick="resetPassword()">Reset</button>
-
-  </div>
-
-</div>
-
-
 <input id="searchBox" placeholder="Search city...">
 
 
@@ -345,17 +324,6 @@ html, body {
   <span>🌍 AirSat AI</span>
 
   <button onclick="toggleMode()">Switch</button>
-
-  <button id="logoutBtn"
-
-          onclick="logoutUser()"
-
-          style="display:none;">
-
-    Logout
-
-  </button>
-
 </div>
 
 
@@ -447,9 +415,7 @@ let heatLayer = null;
 
 function loadHeatmap(){
 
-  fetch("/api/cpcb-stations/", {
-    credentials:"same-origin"
-  })
+  fetch("/api/cpcb-stations/", {})
 
   .then(r => r.json())
 
@@ -550,280 +516,6 @@ function getAQIColor(aqi){
     return "🟪 Very Poor";
 
   return "⬛ Severe";
-
-}
-
-
-// ===== CSRF =====
-
-
-function getCookie(name){
-
-
-  const cookies = document.cookie
-
-    ? document.cookie.split(";")
-
-    : [];
-
-
-  for (const cookie of cookies){
-
-
-    const [key, ...rest] =
-
-      cookie.trim().split("=");
-
-
-    if (key === name)
-
-      return decodeURIComponent(rest.join("="));
-
-
-  }
-
-
-  return null;
-
-
-}
-
-
-function csrfHeaders(){
-
-
-  return {
-
-
-    "Content-Type":"application/json",
-
-
-    "X-CSRFToken":
-
-      getCookie("csrftoken") || ""
-
-
-  };
-
-
-}
-
-
-// ===== LOGIN =====
-
-
-function login(){
-
-
-  fetch("/api/login/", {
-
-
-    method:"POST",
-
-
-    credentials:"same-origin",
-
-
-    headers:csrfHeaders(),
-
-
-    body:JSON.stringify({
-
-
-      username:user.value,
-
-
-      password:pass.value
-
-
-    })
-
-
-  })
-
-
-  .then(async r => ({
-
-
-    ok:r.ok,
-
-
-    data:await r.json()
-
-
-  }))
-
-
-  .then(({ok, data})=>{
-
-
-    if(ok && data.status==="success"){
-
-
-      loginBox.style.display="none";
-
-
-      logoutBtn.style.display="inline-block";
-
-
-      loadHeatmap();
-
-
-      loadAQIMarkers();
-
-
-    }
-
-
-    else {
-
-
-      console.warn("AirSat login failed:", data.error || "Invalid credentials");
-
-
-    }
-
-
-  })
-
-
-  .catch((error)=>{
-    console.warn("AirSat login request failed:", error);
-  });
-
-
-}
-
-
-// ===== LOGOUT =====
-
-
-function syncAuthState(){
-
-
-  fetch("/api/data/", {
-
-    credentials:"same-origin"
-
-  })
-
-
-  .then(r=>{
-
-
-    if(r.ok){
-
-
-      loginBox.style.display="none";
-
-
-      logoutBtn.style.display="inline-block";
-
-
-    }
-
-
-    else {
-
-
-      loginBox.style.display="block";
-
-
-      logoutBtn.style.display="none";
-
-
-    }
-
-
-  })
-
-
-  .catch(()=>{
-
-
-    loginBox.style.display="block";
-
-
-    logoutBtn.style.display="none";
-
-
-  });
-
-
-}
-
-
-function logoutUser(){
-
-
-  fetch("/api/logout/", {
-
-
-    method:"POST",
-
-
-    credentials:"same-origin",
-
-
-    headers:csrfHeaders()
-
-
-  })
-
-
-  .then(async r => ({
-
-
-    ok:r.ok,
-
-
-    data:await r.json()
-
-
-  }))
-
-
-  .then(({ok, data})=>{
-
-
-    if(ok){
-
-
-      loginBox.style.display="block";
-
-
-      logoutBtn.style.display="none";
-
-
-      if(aqiMarkerLayer)
-
-        aqiMarkerLayer.clearLayers();
-
-
-      if(heatLayer)
-
-        map.removeLayer(heatLayer);
-
-
-    }
-
-
-    else {
-
-
-      console.warn("AirSat logout failed:", data.error || "Logout failed");
-
-
-    }
-
-
-  })
-
-
-  .catch((error)=>{
-    console.warn("AirSat logout request failed:", error);
-  });
-
 
 }
 
@@ -955,9 +647,7 @@ function aqiColor(aqi){
 
 function loadAQIMarkers(){
 
-  fetch("/api/cpcb-stations/", {
-    credentials:"same-origin"
-  })
+  fetch("/api/cpcb-stations/", {})
 
   .then(r =>
     r.ok ? r.json() : null
@@ -1182,9 +872,7 @@ function getAQI(
 
   fetch(
     `/pollution/?lat=${lat}&lon=${lon}&t=${Date.now()}`,
-    {
-      credentials:"same-origin"
-    }
+    {}
   )
 
   .then(r => r.json())
@@ -1296,9 +984,7 @@ function getAQI(
 
     fetch(
       "/api/predict/",
-      {
-        credentials:"same-origin"
-      }
+      {}
     )
 
     .then(r => r.json())
@@ -2027,9 +1713,6 @@ function register(){
       method:"POST",
 
 
-      credentials:"same-origin",
-
-
       headers:csrfHeaders(),
 
 
@@ -2171,9 +1854,6 @@ function resetPassword(){
       method:"POST",
 
 
-      credentials:"same-origin",
-
-
       headers:csrfHeaders(),
 
 
@@ -2283,11 +1963,6 @@ function resetPassword(){
 
 
 }
-
-
-syncAuthState();
-
-
 setInterval(
 
   ()=>{
