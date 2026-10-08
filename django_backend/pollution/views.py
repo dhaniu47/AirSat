@@ -683,20 +683,25 @@ def pollution(request):
     if not (-180 <= lon <= 180):
         return JsonResponse({"error": "Invalid longitude"}, status=400)
 
+    # For a map click, use the exact clicked coordinates first.
+    # This avoids making every click wait for the large CPCB station feed.
     try:
-        # Prefer the official CPCB station value when the CPCB feed responds.
-        try:
-            station = _nearest_cpcb_station(lat, lon)
-        except (
-            requests.RequestException,
-            ET.ParseError,
-            KeyError,
-            IndexError,
-            TypeError,
-            ValueError,
-        ) as exc:
-            print("CPCB AQI feed unavailable; using OpenWeather fallback:", exc)
-            station = None
+        fallback = _openweather_current(lat, lon)
+
+        if fallback is not None:
+            PollutionData.objects.create(
+                lat=lat,
+                lon=lon,
+                no2=fallback["components"].get("no2", 0),
+                pm25=fallback["components"].get("pm2_5", 0),
+                city="Current location",
+                level=fallback["level"],
+            )
+
+            return JsonResponse(fallback)
+
+        # If OpenWeather is unavailable, fall back to the nearest CPCB station.
+        station = _nearest_cpcb_station(lat, lon)
 
         if station is not None:
             aqi = station["aqi"]
@@ -730,27 +735,10 @@ def pollution(request):
 
             return JsonResponse(result)
 
-        # If CPCB is unreachable from the hosting environment, return a
-        # location-specific current OpenWeather result instead of leaving the UI
-        # stuck on "Loading AQI".
-        fallback = _openweather_current(lat, lon)
-
-        if fallback is None:
-            return JsonResponse(
-                {"error": "Current AQI data is temporarily unavailable."},
-                status=503,
-            )
-
-        PollutionData.objects.create(
-            lat=lat,
-            lon=lon,
-            no2=fallback["components"].get("no2", 0),
-            pm25=fallback["components"].get("pm2_5", 0),
-            city="Current location",
-            level=fallback["level"],
+        return JsonResponse(
+            {"error": "Current AQI data is temporarily unavailable."},
+            status=503,
         )
-
-        return JsonResponse(fallback)
 
     except requests.RequestException as exc:
         print("AQI provider error:", exc)
