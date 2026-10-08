@@ -1234,6 +1234,12 @@ function getAQI(
         ? new Date(d.observed_at).toLocaleString()
         : "N/A";
 
+    const sourceLabel =
+      d.source || "AQI provider";
+
+    const methodLabel =
+      d.aqi_method || "";
+
 
     dashboardBox.innerHTML = `
 
@@ -1254,6 +1260,9 @@ function getAQI(
       🕒 Updated:
       ${observed}<br>
 
+      📡 Source:
+      ${sourceLabel}<br>
+
       🔮 Future AQI:
       <span id="prediction">
         Loading...
@@ -1267,20 +1276,19 @@ function getAQI(
 
         <b>${d.station}</b><br>
 
-        <b>Official CPCB AQI:</b>
+        <b>AQI:</b>
         ${aqi}<br>
 
         ${level}<br>
 
+        <small>${sourceLabel}</small><br>
 
-        📍 Nearest station distance:
+        <small>${methodLabel}</small><br>
+
+        📍 Distance:
         ${stationDistance}<br>
 
-        🕒 ${observed}<br>
-
-        <small>
-          Source: CPCB CAAQMS
-        </small>
+        🕒 ${observed}
 
       `);
 
@@ -1322,7 +1330,7 @@ function getAQI(
 
     if(popup)
       popup.setContent(
-        "Error fetching official CPCB AQI ❌"
+        "Current AQI data is temporarily unavailable."
       );
 
   });
