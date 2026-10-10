@@ -941,6 +941,9 @@ function renderAQIResult(d, popup){
 
 function getOpenMeteoAQI(lat, lon, popup = null){
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
   const url =
     "https://air-quality-api.open-meteo.com/v1/air-quality" +
     "?latitude=" + encodeURIComponent(lat) +
@@ -948,17 +951,14 @@ function getOpenMeteoAQI(lat, lon, popup = null){
     "&current=us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone" +
     "&timezone=UTC";
 
-  return fetch(url)
+  return fetch(url, { signal: controller.signal })
     .then(r => {
       if(!r.ok)
         throw new Error("Open-Meteo HTTP " + r.status);
-
       return r.json();
     })
     .then(data => {
-
       const current = data.current || {};
-
       if(current.us_aqi == null)
         throw new Error("Open-Meteo AQI unavailable");
 
@@ -983,8 +983,15 @@ function getOpenMeteoAQI(lat, lon, popup = null){
       };
     })
     .then(d => {
+      clearTimeout(timeout);
       renderAQIResult(d, popup);
+      if(popup && !popup.isOpen())
+        popup.openOn(map);
       return d;
+    })
+    .catch(err => {
+      clearTimeout(timeout);
+      throw err;
     });
 }
 
@@ -1362,18 +1369,13 @@ map.on('click', function(e){
     .openOn(map);
 
 
-  // PASS popup here
-
-
-  getAQI(
-
-    lat,
-
-    lon,
-
-    popup
-
-  );
+  // Use the direct AQI provider for map clicks so backend delays cannot
+  // leave the selected popup stuck on "Loading AQI...".
+  getOpenMeteoAQI(lat, lon, popup)
+    .catch(error => {
+      console.error("Map-click AQI lookup failed:", error);
+      popup.setContent("AQI unavailable right now. Please try this location again.");
+    });
 
 
 });
