@@ -857,7 +857,8 @@ function renderAQIResult(d, popup){
 
   let level = getAQIColor(aqi);
 
-  updateGraph(aqi);
+  if(!d.skipGraph)
+    updateGraph(aqi);
 
   let oldAQI = window.prevAQI || 0;
   window.prevAQI = aqi;
@@ -884,7 +885,7 @@ function renderAQIResult(d, popup){
     d.aqi_method || "";
 
   const stationLabel =
-    d.station || "Current location";
+    d.location_name || d.station || "Current location";
 
   dashboardBox.innerHTML = `
     <b>Dashboard</b><br>
@@ -962,8 +963,16 @@ function getOpenMeteoAQI(lat, lon, popup = null){
       if(current.us_aqi == null)
         throw new Error("Open-Meteo AQI unavailable");
 
+      const clicked = window.lastClickCoordinates;
+      const locationName = window.lastClickedPlace && clicked &&
+        Math.abs(clicked.lat - lat) < 0.000001 &&
+        Math.abs(clicked.lon - lon) < 0.000001
+          ? window.lastClickedPlace.name
+          : null;
+
       return {
         aqi: Number(current.us_aqi),
+        location_name: locationName,
         level: getAQIColor(Number(current.us_aqi)),
         lat: lat,
         lon: lon,
@@ -984,6 +993,12 @@ function getOpenMeteoAQI(lat, lon, popup = null){
     })
     .then(d => {
       clearTimeout(timeout);
+      const clicked = window.lastClickCoordinates;
+      if(clicked && Math.abs(clicked.lat - lat) < 0.000001 && Math.abs(clicked.lon - lon) < 0.000001){
+        window.lastClickAQIData = d;
+        if(window.lastClickedPlace && window.lastClickedPlace.name)
+          d.location_name = window.lastClickedPlace.name;
+      }
       renderAQIResult(d, popup);
       if(popup && !popup.isOpen())
         popup.openOn(map);
@@ -1344,10 +1359,10 @@ map.on('click', function(e){
 
 
   window.lastLat = lat;
-
-
   window.lastLon = lon;
-
+  window.lastClickCoordinates = {lat:lat, lon:lon};
+  window.lastClickedPlace = null;
+  window.lastClickAQIData = null;
 
   let popup = L.popup()
 
@@ -1369,12 +1384,50 @@ map.on('click', function(e){
     .openOn(map);
 
 
-  // Use the direct AQI provider for map clicks so backend delays cannot
-  // leave the selected popup stuck on "Loading AQI...".
+  // Fetch AQI and reverse-geocode the clicked coordinates independently.
+  // This provides the nearest mapped locality, district and state instead of
+  // displaying only the generic air-quality model name.
   getOpenMeteoAQI(lat, lon, popup)
     .catch(error => {
       console.error("Map-click AQI lookup failed:", error);
-      popup.setContent("AQI unavailable right now. Please try this location again.");
+      popup.setContent("AQI unavailable right now. Coordinates: " + lat.toFixed(5) + ", " + lon.toFixed(5));
+    });
+
+  const placeController = new AbortController();
+  const placeTimeout = setTimeout(() => placeController.abort(), 7000);
+  fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&lat=" + encodeURIComponent(lat) + "&lon=" + encodeURIComponent(lon), {
+    signal: placeController.signal,
+    headers: { "Accept-Language": "en" }
+  })
+    .then(r => {
+      if(!r.ok) throw new Error("Reverse geocoding HTTP " + r.status);
+      return r.json();
+    })
+    .then(data => {
+      clearTimeout(placeTimeout);
+      if(window.lastClickCoordinates !== null &&
+         window.lastClickCoordinates &&
+         Math.abs(window.lastClickCoordinates.lat - lat) < 0.000001 &&
+         Math.abs(window.lastClickCoordinates.lon - lon) < 0.000001 &&
+         map.hasLayer(popup)) {
+        const a = data.address || {};
+        const locality = a.neighbourhood || a.suburb || a.village || a.town || a.city || a.municipality || a.hamlet;
+        const district = a.city_district || a.county || a.state_district;
+        const state = a.state || a.region;
+        const parts = [a.road, locality, district, state, a.postcode, a.country].filter((v, i, arr) => v && arr.indexOf(v) === i);
+        const place = parts.length ? parts.join(", ") : (data.display_name || "Location name unavailable");
+        window.lastClickedPlace = {lat:lat, lon:lon, name:place};
+        if(window.lastClickAQIData){
+          const enriched = {...window.lastClickAQIData, location_name:place, skipGraph:true};
+          renderAQIResult(enriched, popup);
+        } else {
+          popup.setContent("<b>" + place + "</b><br>Coordinates: " + lat.toFixed(5) + ", " + lon.toFixed(5) + "<br>Loading AQI...");
+        }
+      }
+    })
+    .catch(error => {
+      clearTimeout(placeTimeout);
+      console.warn("Reverse geocoding unavailable:", error);
     });
 
 
