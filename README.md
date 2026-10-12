@@ -1,39 +1,32 @@
 # 🌍 AeroLytix-AI (AirSat)
 
-AI-powered air-quality monitoring and analytics platform with interactive pollution maps and AQI visualizations.
+AI-powered air-quality monitoring and analytics platform with an interactive pollution map, AQI visualizations, and prediction features.
 
 ## 🚀 Live Demo
 
-**Live link:** https://stellular-pasca-476f5f.netlify.app
+**Live application:** https://airsat.onrender.com
 
-> The live link is the Netlify deployment saved in this repository. Django-backed features may require a separately running backend.
+**GitHub repository:** https://github.com/dhaniu47/AirSat
+
+The application is deployed as a Django web service on Render. Availability and third-party air-quality data depend on the deployment and external data providers.
 
 ## ✨ Features
 
-- Real-time AQI monitoring
-- Interactive map visualization
-- AQI trend graphs and dashboard
-- Pollution heatmap and analytics
-- Current-location functionality
-- Light, dark, and satellite map modes
-- AQI prediction interface
-- Responsive UI
+- Interactive India map using Leaflet.js
+- AQI markers and pollution heatmap
+- Current-location lookup using browser location permission
+- AQI trend chart and dashboard
+- Map-click AQI lookup with locality/state information
+- Light, dark, and satellite map layers
+- AQI prediction endpoint and analytics
+- Django REST endpoints for pollution data
 
 ## 🛠 Tech Stack
 
-### Frontend
-- HTML, CSS, JavaScript
-- Leaflet.js
-
-### Backend
-- Python
-- Django
-- REST APIs
-
-### Data & AI
-- Pandas
-- NumPy
-- Machine learning
+- **Backend:** Python, Django 5.1, Django REST Framework
+- **Frontend:** HTML, CSS, JavaScript, Leaflet.js, Chart.js
+- **Data and ML:** Pandas, NumPy, scikit-learn
+- **Deployment:** Render
 
 ## 📸 Screenshots
 
@@ -55,24 +48,43 @@ AI-powered air-quality monitoring and analytics platform with interactive pollut
 ### Prediction dashboard
 ![Prediction](screenshots/prediction.png)
 
-## 🎯 Project Objective
-
-AeroLytix-AI (AirSat) aims to support environmental monitoring through interactive air-quality visualization, AQI analytics, and prediction features.
-
 ## ▶ Run Locally
 
-From the project folder, open a terminal and run:
+From the repository root, run:
 
 ```bash
 cd django_backend
+python -m venv .venv
+```
+
+Activate the environment on Windows:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Set the required Django environment variable before starting the server. For local development in PowerShell:
+
+```powershell
+$env:DJANGO_SECRET_KEY = "replace-with-a-local-development-secret"
+$env:DJANGO_DEBUG = "True"
+$env:DJANGO_ALLOWED_HOSTS = "127.0.0.1,localhost"
 python manage.py runserver
 ```
 
-Then open http://127.0.0.1:8000 in your browser.
+Then open http://127.0.0.1:8000.
+
+For deployment configuration, see the Render service settings and `django_backend/.env.example`. Never commit real secrets or API tokens.
 
 ## 👩‍💻 Developer
 
 Dhaneswari Behera
 
 - GitHub: https://github.com/dhaniu47
-- Repository: https://github.com/dhaniu47/AirSat
+- Project: https://github.com/dhaniu47/AirSat
