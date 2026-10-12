@@ -1,102 +1,78 @@
-# 🌍 AeroLytix-AI
+# 🌍 AeroLytix-AI (AirSat)
 
-AI-powered real-time Air Quality Analytics and Prediction Platform.
+AI-powered air-quality monitoring and analytics platform with interactive pollution maps and AQI visualizations.
 
-## 🚀 Features
+## 🚀 Live Demo
 
-- Real-time AQI Monitoring
-- Interactive India Map Visualization
-- Future AQI Prediction
-- Light / Dark / Satellite Modes
-- Dynamic Dashboard
-- AQI Trend Graphs
+**Live link:** https://stellular-pasca-476f5f.netlify.app
+
+> The live link is the Netlify deployment saved in this repository. Django-backed features may require a separately running backend.
+
+## ✨ Features
+
+- Real-time AQI monitoring
+- Interactive map visualization
+- AQI trend graphs and dashboard
+- Pollution heatmap and analytics
+- Current-location functionality
+- Light, dark, and satellite map modes
+- AQI prediction interface
 - Responsive UI
-- Pollution Data Analytics
-- Smart Visualization System
-
----
 
 ## 🛠 Tech Stack
 
 ### Frontend
-- HTML
-- CSS
-- JavaScript
+- HTML, CSS, JavaScript
 - Leaflet.js
 
 ### Backend
-- Django
 - Python
+- Django
+- REST APIs
 
 ### Data & AI
 - Pandas
 - NumPy
-- Machine Learning
+- Machine learning
 
----
+## 📸 Screenshots
 
-## 📊 Screenshots
+### Login, logout and password reset
 ![Login Logout Reset](screenshots/login_logout_reset.png)
 
-
-### ☀ Light Mode
-
+### Light mode
 ![Light Mode](screenshots/light-mode.png)
 
----
-
-### 🌙 Dark Mode
-
+### Dark mode
 ![Dark Mode](screenshots/dark-mode.png)
 
----
-
-### 🛰 Satellite Mode
-
+### Satellite mode
 ![Satellite Mode](screenshots/satellite-mode.png)
 
----
-
-### 📱 Mobile View
-
+### Mobile view
 ![Mobile View](screenshots/mobile-view.png)
 
----
-
-## 📈 Prediction Dashboard
-
+### Prediction dashboard
 ![Prediction](screenshots/prediction.png)
-
----
 
 ## 🎯 Project Objective
 
-AeroLytix-AI was developed to provide intelligent environmental monitoring and AQI prediction through interactive visualization and AI-based analytics.
-
----
-
-## 💡 Future Enhancements
-
-- Android Application
-- iOS Application
-- Desktop Application
-- Real-time Weather APIs
-- Cloud Deployment
-- Advanced AI Prediction Models
-- User Authentication
-
----
+AeroLytix-AI (AirSat) aims to support environmental monitoring through interactive air-quality visualization, AQI analytics, and prediction features.
 
 ## ▶ Run Locally
+
+From the project folder, open a terminal and run:
 
 ```bash
 cd django_backend
 python manage.py runserver
-http://127.0.0.1:8000
+```
 
-👩‍💻 Developer
+Then open http://127.0.0.1:8000 in your browser.
+
+## 👩‍💻 Developer
 
 Dhaneswari Behera
 
-GitHub:
-https://github.com/dhaniu47
+- GitHub: https://github.com/dhaniu47
+- Repository: https://github.com/dhaniu47/AirSat
