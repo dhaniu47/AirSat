@@ -1,3 +1,5 @@
+🚀 **[OPEN THE LIVE AIRSAT APPLICATION](https://airsat.onrender.com)**
+
 # 🌍 AeroLytix-AI (AirSat)
 
 AI-powered air-quality monitoring and analytics platform with an interactive pollution map, AQI visualizations, and prediction features.
