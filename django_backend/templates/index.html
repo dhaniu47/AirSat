@@ -1,394 +1,63 @@
 <!DOCTYPE html>
-
-<html>
-
+<html lang="en">
 <head>
-
-<title>AirSat AI</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AeroLytix AI — Air Quality Intelligence</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
-
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css">
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-
-
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-
-html, body {
-
-  margin:0;
-
-  padding:0;
-
-  height:100%;
-
-  overflow:hidden;
-
-  font-family:Arial;
-
-}
-
-
-#map {
-
-  height:100%;
-
-  width:100%;
-
-}
-
-
-#map.dark-map .leaflet-tile {
-
-  filter: invert(1) hue-rotate(180deg) brightness(.78) contrast(1.08);
-
-}
-
-
-.blink {
-
-  animation: blinkAnim 0.8s infinite alternate;
-
-}
-
-
-@keyframes blinkAnim {
-
-  from {
-
-    color: red;
-
-  }
-
-  to {
-
-    color: black;
-
-  }
-
-}
-
-
-#topBar {
-
-  position:absolute;
-
-  top:0;
-
-  left:0;
-
-  width:100%;
-
-  box-sizing:border-box;
-
-  background:rgba(0,0,0,0.7);
-
-  color:white;
-
-  padding:10px;
-
-  z-index:5000;
-
-  display:flex;
-
-  align-items:center;
-
-  gap:8px;
-
-}
-
-
-#topBar span {
-
-  margin-right:auto;
-
-}
-
-
-#topBar button {
-
-  cursor:pointer;
-
-}
-
-
-#searchBox {
-
-  position:absolute;
-
-  top:70px;
-
-  left:50%;
-
-  transform:translateX(-50%);
-
-  padding:8px;
-
-  width:260px;
-
-  border-radius:20px;
-
-  border:1px solid #ccc;
-
-  z-index:2000;
-
-}
-
-
-#infoBox,
-
-#dashboardBox {
-
-  position:absolute;
-
-  top:60px;
-
-  background:white;
-
-  padding:10px;
-
-  border-radius:8px;
-
-  z-index:1000;
-
-}
-
-
-#infoBox {
-
-  left:10px;
-
-}
-
-
-#dashboardBox {
-
-  right:10px;
-
-  width:200px;
-
-}
-
-
-.legend {
-
-  position:absolute;
-
-  bottom:20px;
-
-  right:10px;
-
-  background:white;
-
-  padding:10px;
-
-  border-radius:10px;
-
-  z-index:1000;
-
-}
-
-
-/* ===== CURRENT LOCATION BUTTON ===== */
-
-#currentLocationBtn {
-
-  position:absolute;
-
-  top:110px;
-
-  left:10px;
-
-  width:42px;
-
-  height:42px;
-
-  padding:0;
-
-  border-radius:50%;
-
-  border:1px solid rgba(255,255,255,0.8);
-
-  background:rgba(255,255,255,0.65);
-
-  backdrop-filter:blur(4px);
-
-  -webkit-backdrop-filter:blur(4px);
-
-  box-shadow:0 2px 8px rgba(0,0,0,0.25);
-
-  z-index:2000;
-
-  cursor:pointer;
-
-  font-size:20px;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-}
-
-
-#currentLocationBtn:hover {
-
-  background:rgba(255,255,255,0.85);
-
-}
-
-
-#currentLocationBtn:disabled {
-
-  opacity:0.6;
-
-  cursor:wait;
-
-}
-
-
-/* Current location marker */
-
-.current-location-marker {
-
-  background:transparent;
-
-  border:none;
-
-}
-
-
-.current-location-dot {
-
-  width:16px;
-
-  height:16px;
-
-  border-radius:50%;
-
-  background:#1a73e8;
-
-  border:3px solid white;
-
-  box-shadow:0 0 0 3px rgba(26,115,232,0.25),
-
-             0 2px 8px rgba(0,0,0,0.45);
-
-}
-
-
-</style>
-
-</head>
-
-
+:root{color-scheme:dark;--bg:#07111d;--panel:#0d1b2a;--panel2:#102235;--line:#20384c;--muted:#91a8ba;--text:#edf6fb;--cyan:#43d9e8;--green:#51d6a2;--amber:#f5bd55;--red:#ff6d78}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 52% 0%,rgba(40,149,176,.13),transparent 46%)}
+button,input{font:inherit}.app{height:100%;display:grid;grid-template-rows:66px 1fr;position:relative}
+header{display:flex;align-items:center;justify-content:space-between;padding:0 25px;border-bottom:1px solid var(--line);background:rgba(7,17,29,.94);z-index:5000}
+.brand{display:flex;align-items:center;gap:12px}.brand-mark{height:37px;width:37px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(140deg,#1c8298,#42d9e8);color:#06202b;font-size:20px;box-shadow:0 0 25px #2dd4e533}.brand h1{font:700 17px 'Space Grotesk';margin:0;letter-spacing:.2px}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:1.7px;margin-top:2px}
+.head-right{display:flex;align-items:center;gap:12px}.live-pill{font-size:11px;color:#8ff0c6;border:1px solid #2c795f;background:#10372d;padding:7px 11px;border-radius:20px;letter-spacing:.5px}.live-dot{display:inline-block;width:7px;height:7px;background:#52e3a5;border-radius:50%;margin-right:7px;box-shadow:0 0 10px #52e3a5}
+.workspace{min-height:0;display:grid;grid-template-columns:250px minmax(320px,1fr) 285px;gap:12px;padding:12px}
+.sidebar,.rightbar{background:linear-gradient(160deg,#102235,#0b1927);border:1px solid var(--line);border-radius:15px;min-height:0;overflow:auto}
+.sidebar{padding:17px 14px}.eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:1.6px;color:#7895a9;font-weight:700;margin:0 0 12px}.navitem{padding:11px 12px;border-radius:9px;color:#b8cbd8;font-size:13px;margin:4px 0;display:flex;align-items:center;gap:10px}.navitem.active{background:#143b4a;color:#70e6ed;border:1px solid #1b5966}.navicon{width:20px;text-align:center;font-size:16px}.side-divider{height:1px;background:var(--line);margin:18px 0}.metric-card{padding:13px;border:1px solid var(--line);background:#0a1724;border-radius:12px;margin:9px 0}.metric-label{font-size:10px;color:var(--muted);letter-spacing:.7px;text-transform:uppercase}.metric-value{font:600 24px 'Space Grotesk';margin-top:6px}.metric-note{font-size:10px;color:#7895a9;margin-top:3px}
+.center{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) 180px;gap:11px}.page-title{display:flex;justify-content:space-between;align-items:center;padding:3px 4px}.page-title h2{font:600 20px 'Space Grotesk';margin:0}.page-title p{margin:4px 0 0;color:var(--muted);font-size:11px}.search-wrap{display:flex;gap:8px}.search-wrap input{width:235px;background:#0d1b2a;border:1px solid var(--line);border-radius:9px;padding:10px 12px;color:var(--text);outline:none}.search-wrap input:focus{border-color:var(--cyan)}
+.map-shell{position:relative;min-height:0;border-radius:15px;overflow:hidden;border:1px solid #29485b;background:#091725;box-shadow:0 12px 40px #0005}#map{height:100%;width:100%;background:#0a1a28}.map-overlay{position:absolute;z-index:800;pointer-events:none;top:13px;left:14px;background:#071522d9;border:1px solid #29485b;border-radius:9px;padding:9px 12px;font-size:11px;color:#cde3ed;backdrop-filter:blur(8px)}.map-overlay strong{color:#5ee1e9}.map-controls{position:absolute;z-index:900;bottom:14px;left:14px;display:flex;gap:7px}.map-controls button,.loc-btn{border:1px solid #36566b;background:#0b1d2c;color:#e8f6fb;padding:8px 11px;border-radius:8px;cursor:pointer;font-size:11px}.map-controls button:hover,.loc-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+#infoBox{position:absolute;z-index:900;top:58px;left:14px;max-width:190px;background:#0b1d2cdd;border:1px solid #29485b;border-radius:9px;padding:9px 11px;color:#bfd3df;font-size:11px}
+#currentLocationBtn{position:absolute;z-index:1000;right:14px;bottom:14px;width:39px;height:39px;border-radius:10px;border:1px solid #36566b;background:#0b1d2c;color:white;font-size:17px;cursor:pointer}
+#dashboardBox{display:none}.legend{position:absolute;right:14px;top:14px;z-index:800;background:#081724e8;border:1px solid #29485b;border-radius:9px;padding:10px 12px;font-size:10px;line-height:1.8;color:#c5d8e3;backdrop-filter:blur(8px)}
+.chart-card{background:linear-gradient(150deg,#102235,#0b1927);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-height:0;display:grid;grid-template-rows:auto 1fr}.chart-head{display:flex;justify-content:space-between;align-items:center}.chart-head h3{font:600 12px 'Space Grotesk';margin:0}.chart-head span{font-size:10px;color:var(--muted)}#aqiChart{width:100%!important;height:125px!important}
+.rightbar{padding:16px 14px}.rightbar h3{font:600 14px 'Space Grotesk';margin:0 0 14px}.aqi-feature{background:linear-gradient(140deg,#123d4a,#102a3c);border:1px solid #236073;border-radius:13px;padding:15px;margin-bottom:13px}.aqi-feature .metric-label{color:#a5dce3}.aqi-feature .metric-value{font-size:42px;color:#eafcff}.aqi-status{font-size:12px;color:#77e2cb;margin-top:2px}.detail-row{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid #20384c;font-size:11px}.detail-row span:first-child{color:#8ea6b8}.detail-row span:last-child{text-align:right;color:#dceaf2}.pollutant-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.pollutant{background:#0a1724;border:1px solid var(--line);border-radius:9px;padding:10px}.pollutant small{color:var(--muted);font-size:10px}.pollutant b{display:block;margin-top:4px;font:600 15px 'Space Grotesk'}
+#dashboardBox{position:absolute;left:-9999px}#aqiChart{background:transparent!important;padding:0!important;border-radius:0!important}
+.leaflet-control-layers,.leaflet-bar a{background:#102235!important;color:#e9f4fa!important;border-color:#29485b!important}.leaflet-control-attribution{background:#071522cc!important;color:#91a8ba!important}.leaflet-control-attribution a{color:#63dce5!important}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#102235;color:#edf6fb}.leaflet-popup-content{font-family:'DM Sans';font-size:12px}
+.blink{animation:blinkAnim .8s infinite alternate}@keyframes blinkAnim{from{color:#ff6d78}to{color:#edf6fb}}
+@media(max-width:1050px){.workspace{grid-template-columns:205px minmax(280px,1fr)}.rightbar{display:none}.center{grid-column:2}}
+@media(max-width:700px){.app{grid-template-rows:58px 1fr}.workspace{display:block;padding:8px}.sidebar{display:none}.center{height:100%;grid-template-rows:auto minmax(0,1fr) 145px}.page-title{align-items:flex-start;gap:8px;flex-direction:column}.page-title h2{font-size:17px}.search-wrap{width:100%}.search-wrap input{width:100%}.rightbar{display:none}.head-right .live-pill{display:none}header{padding:0 13px}.brand h1{font-size:15px}.legend{font-size:9px;padding:7px 9px;right:8px;top:8px}.map-overlay{top:8px;left:8px}.chart-card{padding:9px}}
+</style></head>
 <body>
-
-
-<input id="searchBox" placeholder="Search city...">
-
-
-<div id="topBar">
-
-  <span>🌍 AirSat AI</span>
-
-  <button onclick="toggleMode()">Switch</button>
-</div>
-
-
-<div id="infoBox">
-
-  Click map to get AQI
-
-</div>
-
-
-<!-- CURRENT LOCATION BUTTON -->
-
-<button id="currentLocationBtn"
-
-        onclick="getCurrentLocation()"
-
-        title="Use my current location"
-
-        aria-label="Use my current location">
-
-  📍
-
-</button>
-
-
-<div id="dashboardBox">
-
-  Loading...
-
-</div>
-
-
-<div class="legend">
-
-  <div>🟩 0–50 Good</div>
-
-  <div>🟨 51–100 Satisfactory</div>
-
-  <div>🟧 101–200 Moderate</div>
-
-  <div>🟥 201–300 Poor</div>
-
-  <div>🟪 301–400 Very Poor</div>
-
-  <div>⬛ 401–500 Severe</div>
-
-</div>
-
-
-<canvas id="aqiChart"
-
-        style="
-
-        position:absolute;
-
-        bottom:120px;
-
-        left:10px;
-
-        width:250px;
-
-        height:150px;
-
-        background:white;
-
-        padding:10px;
-
-        border-radius:10px;
-
-        z-index:1000;">
-
-</canvas>
-
-
-<div id="map"></div>
-
-
-<!-- SAME HEAD + STYLE (NO CHANGE) -->
-
-
-<!-- SAME HEAD + STYLE (NO CHANGE) -->
-
-
+<div class="app">
+<header><div class="brand"><div class="brand-mark">⌁</div><div><h1>AeroLytix <span style="color:var(--cyan)">AI</span></h1><small>AIR QUALITY INTELLIGENCE</small></div></div><div class="head-right"><span class="live-pill"><i class="live-dot"></i>MONITORING</span><span style="font-size:11px;color:var(--muted)">INDIA · AQI NETWORK</span></div></header>
+<div class="workspace">
+<aside class="sidebar">
+<p class="eyebrow">Workspace</p><div class="navitem active"><span class="navicon">⌖</span>Air quality overview</div><div class="navitem"><span class="navicon">◉</span>Geospatial monitoring</div><div class="navitem"><span class="navicon">⌁</span>Prediction & analytics</div>
+<div class="side-divider"></div><p class="eyebrow">Network snapshot</p>
+<div class="metric-card"><div class="metric-label">Coverage</div><div class="metric-value">India</div><div class="metric-note">Interactive map view</div></div>
+<div class="metric-card"><div class="metric-label">Data layers</div><div class="metric-value">03</div><div class="metric-note">Light · Dark · Satellite</div></div>
+<div class="side-divider"></div><p class="eyebrow">AQI categories</p><div style="font-size:11px;line-height:2;color:#b8cbd8">🟢 0–50 &nbsp; Good<br>🟡 51–100 &nbsp; Satisfactory<br>🟠 101–200 &nbsp; Moderate<br>🔴 201–300 &nbsp; Poor<br>🟣 301–400 &nbsp; Very Poor<br>⚫ 401–500 &nbsp; Severe</div>
+</aside>
+<main class="center">
+<div class="page-title"><div><h2>India air quality map</h2><p>Explore AQI readings, pollution patterns and location insights</p></div><div class="search-wrap"><input id="searchBox" placeholder="⌕  Search a city or location…"><button class="loc-btn" onclick="toggleMode()">Data mode</button></div></div>
+<div class="map-shell"><div id="map"></div><div class="map-overlay"><strong>LIVE MAP</strong><br>Click anywhere to inspect AQI</div><div id="infoBox">Select a point on the map to inspect air quality.</div><div class="legend"><b style="color:#66dfe7">AQI SCALE</b><br>🟩 0–50 Good<br>🟨 51–100 Satisfactory<br>🟧 101–200 Moderate<br>🟥 201–300 Poor<br>🟪 301–400 Very Poor<br>⬛ 401–500 Severe</div><button id="currentLocationBtn" onclick="getCurrentLocation()" title="Use my current location">⌖</button></div>
+<div class="chart-card"><div class="chart-head"><h3>AQI TREND · RECENT READINGS</h3><span>Updates when a location is selected</span></div><canvas id="aqiChart"></canvas></div>
+</main>
+<aside class="rightbar"><h3>Location intelligence</h3><div class="aqi-feature"><div class="metric-label">Selected location · AQI</div><div class="metric-value" id="panelAqi">—</div><div class="aqi-status" id="panelLevel">Choose a map location</div></div>
+<div class="detail-row"><span>Location</span><span id="panelLocation">Not selected</span></div><div class="detail-row"><span>Station distance</span><span id="panelDistance">—</span></div><div class="detail-row"><span>Last updated</span><span id="panelUpdated">—</span></div><div class="detail-row"><span>Data source</span><span id="panelSource">—</span></div><div class="detail-row"><span>Predicted AQI</span><span id="panelPrediction">—</span></div>
+<h3 style="margin-top:18px">Pollutant indicators</h3><div class="pollutant-grid"><div class="pollutant"><small>PM 2.5</small><b id="p25">—</b></div><div class="pollutant"><small>PM 10</small><b id="p10">—</b></div><div class="pollutant"><small>NO₂</small><b id="pno2">—</b></div><div class="pollutant"><small>O₃</small><b id="po3">—</b></div></div>
+<div style="margin-top:16px;color:#7895a9;font-size:10px;line-height:1.6">Readings depend on available station coverage and external data providers. Prediction is shown only when the API returns a value.</div>
+</aside>
+<div id="dashboardBox">Loading…</div>
+</div></div>
 <script>
-
-
 let heatLayer = null;
 
 
@@ -1834,12 +1503,22 @@ setInterval(
   10000
 
 );
-
-
 </script>
-
-
-</body>
-
-
-</html>
+<script>
+const _renderAQIResult = renderAQIResult;
+renderAQIResult = function(d,popup){
+  _renderAQIResult(d,popup);
+  if(!d || d.error) return;
+  const put=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=(v===undefined||v===null||v==="")?"—":v};
+  put("panelAqi",Number.isFinite(Number(d.aqi))?Math.round(Number(d.aqi)):"—");
+  put("panelLevel",d.level||getAQIColor(d.aqi));
+  put("panelLocation",d.location_name||d.station||"Selected location");
+  put("panelDistance",d.station_distance_km!=null?Number(d.station_distance_km).toFixed(1)+" km":"—");
+  put("panelUpdated",d.observed_at?new Date(d.observed_at).toLocaleTimeString():"—");
+  put("panelSource",d.source||"—");
+  const c=d.components||{};
+  put("p25",c.pm2_5);put("p10",c.pm10);put("pno2",c.no2);put("po3",c.o3);
+};
+const _fetchPrediction = window.fetch;
+</script>
+</body></html>
