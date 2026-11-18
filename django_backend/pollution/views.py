@@ -366,6 +366,7 @@ def register(request):
 # RESET PASSWORD
 # ---------------------------------------------------------
 
+@api_login_required
 @require_POST
 def reset_password(request):
     data = parse_json(request)
