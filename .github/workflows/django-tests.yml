@@ -1,0 +1,33 @@
+name: Django tests
+
+on:
+  push:
+    branches: ["production/hardening-audit"]
+  pull_request:
+    branches: ["fix/auth-security"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: django_backend
+    env:
+      DJANGO_SECRET_KEY: ci-test-secret-not-for-production
+      DJANGO_DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: "127.0.0.1,localhost,testserver"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: django_backend/requirements.txt
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run Django system checks
+        run: python manage.py check
+      - name: Run automated tests
+        run: python manage.py test --verbosity 2
