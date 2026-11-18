@@ -5,3 +5,5 @@ gunicorn==26.0.0
 requests==2.34.2
 pandas==2.3.3
 scikit-learn==1.7.2
+dj-database-url==2.3.0
+psycopg[binary]==3.2.6

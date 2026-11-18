@@ -13,6 +13,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.db import connection
 from django.db.models import Avg, Max
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
@@ -235,6 +236,18 @@ def calculate_cpcb_aqi(components):
 # HOME
 # ---------------------------------------------------------
 
+@require_GET
+def health_check(request):
+    """Lightweight readiness check, including database connectivity."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except Exception:
+        return JsonResponse({"status": "unhealthy", "database": "unavailable"}, status=503)
+    return JsonResponse({"status": "ok", "database": "ok"})
+
+
 @ensure_csrf_cookie
 def index(request):
     return render(request, "index.html")
@@ -353,6 +366,7 @@ def register(request):
 # RESET PASSWORD
 # ---------------------------------------------------------
 
+@api_login_required
 @require_POST
 def reset_password(request):
     data = parse_json(request)
